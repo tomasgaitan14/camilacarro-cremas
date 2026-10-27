@@ -1,0 +1,25 @@
+# dependencias y build
+node_modules/
+dist/
+.astro/
+
+# entorno y secretos
+.env
+.env.*
+!.env.example
+
+# supabase local
+supabase/.branches/
+supabase/.temp/
+
+# configuración local de Claude Code
+.claude/settings.local.json
+
+# sistema
+.DS_Store
+
+# material de referencia de terceros (no se versiona)
+referencias/
+
+# worktrees de las versiones de diseño
+.worktrees/

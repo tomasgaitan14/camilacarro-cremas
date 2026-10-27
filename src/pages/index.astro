@@ -1,0 +1,34 @@
+---
+import { listProducts } from '../lib/catalog.ts';
+import { formatArs } from '../lib/money.ts';
+import { getPublicClient } from '../lib/supabase.ts';
+import '../styles/global.css';
+
+const products = await listProducts(getPublicClient());
+---
+
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Camila Carro · Estética y cuidado personal</title>
+  </head>
+  <body class="bg-brand-blush text-brand-ink">
+    <main class="mx-auto max-w-5xl p-6">
+      <h1 class="text-2xl font-semibold">Catálogo (base sin diseño)</h1>
+      <ul class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {
+          products.map((product) => (
+            <li class="rounded bg-white p-4">
+              {product.images[0] && <img src={product.images[0].url} alt={product.images[0].alt} class="aspect-[4/5] w-full object-cover" />}
+              <p class="mt-3 text-sm text-brand-rose-dark">{product.brand.name}</p>
+              <h2 class="font-medium">{product.name}</h2>
+              <p>{formatArs(product.priceArs)}{product.stock === 0 && ' · Agotado'}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </main>
+  </body>
+</html>

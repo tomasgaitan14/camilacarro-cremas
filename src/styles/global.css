@@ -1,0 +1,9 @@
+@import 'tailwindcss';
+
+/* Paleta de la marca, sacada del logo. Cada versión de diseño la afina sobre esta base. */
+@theme {
+  --color-brand-rose: #db9c9c;
+  --color-brand-rose-dark: #b87878;
+  --color-brand-blush: #f3e9e4;
+  --color-brand-ink: #3d2b2b;
+}
