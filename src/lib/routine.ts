@@ -10,9 +10,21 @@ export function routineStepLabel(step: number): string {
   return ROUTINE_STEP_LABEL[step] ?? `Paso ${step}`;
 }
 
+// Para qué sirve cada paso, en lenguaje simple: es la parte educativa de la rutina
+const ROUTINE_STEP_HINT: Readonly<Record<number, string>> = {
+  1: 'Retira maquillaje, protector solar y exceso de grasa para que el resto de la rutina funcione mejor.',
+  2: 'Aporta activos e hidratación sobre la piel ya limpia.',
+  3: 'Cuida la piel de la radiación solar durante el día.',
+};
+
+export function routineStepHint(step: number): string | null {
+  return ROUTINE_STEP_HINT[step] ?? null;
+}
+
 export interface RoutineStep {
   step: number;
   label: string;
+  hint: string | null;
   products: Product[];
 }
 
@@ -43,6 +55,7 @@ export function buildRoutines(products: Product[]): Routine[] {
         .map(([step, stepProducts]) => ({
           step,
           label: routineStepLabel(step),
+          hint: routineStepHint(step),
           products: [...stepProducts].sort((a, b) => a.name.localeCompare(b.name, 'es')),
         })),
     }))

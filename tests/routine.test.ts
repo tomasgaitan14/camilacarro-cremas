@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRoutines, routineStepLabel } from '../src/lib/routine.ts';
+import { buildRoutines, routineStepHint, routineStepLabel } from '../src/lib/routine.ts';
 import { makeLine, makeProduct } from './support/factories.ts';
 
 const LINE_A = makeLine({ id: 'la', slug: 'linea-a', name: 'Línea A' });
@@ -17,6 +17,15 @@ describe('routineStepLabel', () => {
   });
 });
 
+describe('routineStepHint', () => {
+  it('explica los tres pasos y no inventa explicación para otros', () => {
+    expect(routineStepHint(1)).toContain('maquillaje');
+    expect(routineStepHint(2)).toContain('hidratación');
+    expect(routineStepHint(3)).toContain('solar');
+    expect(routineStepHint(4)).toBeNull();
+  });
+});
+
 describe('buildRoutines', () => {
   it('agrupa por línea y ordena los pasos de menor a mayor', () => {
     const routines = buildRoutines([
@@ -31,6 +40,7 @@ describe('buildRoutines', () => {
       [2, 'Tratar e hidratar', ['Crema']],
       [3, 'Proteger', ['Protector']],
     ]);
+    expect(routines[0].steps.map((s) => s.hint)).toEqual([routineStepHint(1), routineStepHint(2), routineStepHint(3)]);
   });
 
   it('junta varios productos del mismo paso, ordenados por nombre', () => {
