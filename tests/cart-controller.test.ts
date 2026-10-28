@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CartCatalog } from '../src/lib/cart-catalog.ts';
 import { mountCart, type CartController } from '../src/lib/cart-controller.ts';
 import { memoryStorage, type CartStorage } from '../src/lib/cart-store.ts';
-import { ADDED_FEEDBACK_MS, CART_STORAGE_KEY } from '../src/lib/constants.ts';
+import { ADDED_FEEDBACK_MS, CART_STORAGE_KEY, ERROR_VISIBLE_MS } from '../src/lib/constants.ts';
 import { CatalogLoadError } from '../src/lib/errors.ts';
 import { makeEntry } from './support/factories.ts';
 
@@ -20,6 +20,7 @@ const CATALOG: CartCatalog = {
 
 // Estructura equivalente a la que escriben las versiones de diseño (ver docs/cart-dom-contract.md)
 const PAGE = `
+  <p data-cart-toast hidden></p>
   <button data-cart-open>Pedido <span data-cart-count></span></button>
   <button data-add-to-cart data-product-id="p1">Agregar aceite</button>
   <input data-qty-for="p1" value="1">
@@ -232,6 +233,85 @@ describe('agregar productos', () => {
     expect(addButton('p1').dataset.state).toBe('added');
     await vi.advanceTimersByTimeAsync(ADDED_FEEDBACK_MS);
     expect(addButton('p1').dataset.state).toBeUndefined();
+  });
+});
+
+describe('aviso flotante de errores', () => {
+  const toast = () => $<HTMLElement>('[data-cart-toast]');
+
+  it('arranca oculto', async () => {
+    const { controller } = mount();
+    await controller.ready;
+    expect(toast().hidden).toBe(true);
+  });
+
+  it('muestra el error aunque el panel esté cerrado', async () => {
+    const { controller } = mount();
+    await controller.ready;
+    $<HTMLInputElement>('[data-qty-for="p1"]').value = '6';
+    await addAndSettle('p1');
+    expect($('[data-cart-root]').dataset.open).toBe('false');
+    expect(toast().hidden).toBe(false);
+    expect(toast().textContent).toBe('Máximo 5 unidades de "Aceite limpiador"');
+  });
+
+  it.each([['sin stock', 'p2', '"Crema calmante" no tiene stock'], ['inexistente', 'p9', 'Ese producto ya no está disponible.']])(
+    'también avisa cuando el producto está %s',
+    async (_label, id, message) => {
+      const { controller } = mount();
+      await controller.ready;
+      await addAndSettle(id);
+      expect(toast().textContent).toBe(message);
+    },
+  );
+
+  it('se borra solo pasado el tiempo y no antes', async () => {
+    vi.useFakeTimers();
+    const { controller } = mount();
+    await vi.advanceTimersByTimeAsync(0);
+    await controller.ready;
+    addButton('p2').click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(toast().hidden).toBe(false);
+    await vi.advanceTimersByTimeAsync(ERROR_VISIBLE_MS - 1);
+    expect(toast().hidden).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(toast().hidden).toBe(true);
+    expect(toast().textContent).toBe('');
+  });
+
+  it('un error nuevo reinicia el tiempo del anterior', async () => {
+    vi.useFakeTimers();
+    const { controller } = mount();
+    await vi.advanceTimersByTimeAsync(0);
+    await controller.ready;
+    addButton('p2').click();
+    await vi.advanceTimersByTimeAsync(ERROR_VISIBLE_MS - 1000);
+    addButton('p2').click();
+    await vi.advanceTimersByTimeAsync(ERROR_VISIBLE_MS - 1000);
+    expect(toast().hidden).toBe(false);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(toast().hidden).toBe(true);
+  });
+
+  it('un agregado exitoso lo borra enseguida', async () => {
+    const { controller } = mount();
+    await controller.ready;
+    await addAndSettle('p2');
+    expect(toast().hidden).toBe(false);
+    await addAndSettle('p3');
+    expect(toast().hidden).toBe(true);
+  });
+
+  it('destroy cancela el temporizador pendiente', async () => {
+    vi.useFakeTimers();
+    const { controller } = mount();
+    await vi.advanceTimersByTimeAsync(0);
+    await controller.ready;
+    addButton('p2').click();
+    await vi.advanceTimersByTimeAsync(0);
+    controller.destroy();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 

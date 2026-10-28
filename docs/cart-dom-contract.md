@@ -32,6 +32,7 @@ Mientras el panel está abierto, `<html>` lleva `data-cart-locked="true"` (por e
   `[data-cart-remove]` actúan sobre su ítem. `[data-cart-inc]` se deshabilita al llegar al máximo.
 - `[data-cart-total]`: total formateado.
 - `[data-cart-clear]`: vacía el pedido.
+- `[data-cart-toast]`: aviso breve de un error de acción (por ejemplo, pedir más que el stock) para mostrarlo fuera del panel; se borra solo a los 5 s y al siguiente éxito.
 - `[data-cart-error]`: mensaje de error (`hidden` cuando no hay). `[data-cart-status]`: `aria-live` con confirmaciones.
 
 ## Opciones y envío

@@ -5,6 +5,7 @@ import type { CartCatalog, CatalogEntry } from './cart-catalog.ts';
 import { createCartStore, type CartStorage } from './cart-store.ts';
 import {
   ADDED_FEEDBACK_MS,
+  ERROR_VISIBLE_MS,
   CART_STORAGE_KEY,
   DELIVERY_METHOD,
   PAYMENT_METHOD,
@@ -72,6 +73,9 @@ export function mountCart(doc: Document, deps: CartControllerDeps): CartControll
   let productsById = new Map<string, CatalogEntry>();
   let errorMessage = '';
   let statusMessage = '';
+  // aviso flotante de un error de acción: visible aunque el panel esté cerrado, y se borra solo
+  let toastMessage = '';
+  let toastTimer: number | undefined;
   let opener: HTMLElement | null = null;
   let catalogPromise: Promise<void> = Promise.resolve();
 
@@ -175,18 +179,34 @@ export function mountCart(doc: Document, deps: CartControllerDeps): CartControll
     for (const element of doc.querySelectorAll<HTMLElement>('[data-cart-status]')) {
       element.textContent = statusMessage;
     }
+    for (const element of doc.querySelectorAll<HTMLElement>('[data-cart-toast]')) {
+      element.textContent = toastMessage;
+      element.hidden = toastMessage === '';
+    }
+  }
+
+  function showToast(message: string): void {
+    toastMessage = message;
+    win.clearTimeout(toastTimer);
+    toastTimer = win.setTimeout(() => {
+      toastMessage = '';
+      render();
+    }, ERROR_VISIBLE_MS);
   }
 
   function report(error: unknown): void {
     if (!(error instanceof CartError)) throw error;
     errorMessage = error.message;
     statusMessage = error.message;
+    showToast(error.message);
     render();
   }
 
   function succeed(status: string): void {
     errorMessage = '';
     statusMessage = status;
+    toastMessage = '';
+    win.clearTimeout(toastTimer);
     render();
   }
 
@@ -239,6 +259,7 @@ export function mountCart(doc: Document, deps: CartControllerDeps): CartControll
     if (!product) {
       errorMessage = catalogStatus === 'error' ? MESSAGES.CATALOG_ERROR : MESSAGES.UNKNOWN_PRODUCT;
       statusMessage = errorMessage;
+      showToast(errorMessage);
       render();
       return;
     }
@@ -356,6 +377,7 @@ export function mountCart(doc: Document, deps: CartControllerDeps): CartControll
       win.removeEventListener('storage', onStorage);
       for (const timer of addedTimers.values()) win.clearTimeout(timer);
       addedTimers.clear();
+      win.clearTimeout(toastTimer);
     },
   };
 }
