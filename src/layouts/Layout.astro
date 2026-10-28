@@ -36,12 +36,13 @@ const fullTitle = title ? `${title} | ${STORE.name}` : `${STORE.name} · ${STORE
   <body>
     <a
       href="#contenido"
+      data-cart-background
       class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded-full focus:bg-surface focus:px-5 focus:py-3 focus:text-rose"
     >
       Ir al contenido
     </a>
     <Header />
-    <main id="contenido" class="pt-24">
+    <main id="contenido" class="pt-24" data-cart-background>
       <slot />
     </main>
     <Footer />

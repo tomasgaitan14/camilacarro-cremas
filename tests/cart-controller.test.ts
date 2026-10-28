@@ -21,12 +21,14 @@ const CATALOG: CartCatalog = {
 // Estructura equivalente a la que escriben las versiones de diseño (ver docs/cart-dom-contract.md)
 const PAGE = `
   <p data-cart-toast hidden></p>
-  <button data-cart-open>Pedido <span data-cart-count></span></button>
-  <button data-add-to-cart data-product-id="p1">Agregar aceite</button>
-  <input data-qty-for="p1" value="1">
-  <button data-add-to-cart data-product-id="p2">Agregar crema</button>
-  <button data-add-to-cart data-product-id="p3">Agregar ampolla</button>
-  <button data-add-to-cart data-product-id="p9">Agregar fantasma</button>
+  <header data-cart-background><button data-cart-open>Pedido <span data-cart-count></span></button></header>
+  <main data-cart-background>
+    <button data-add-to-cart data-product-id="p1">Agregar aceite</button>
+    <input data-qty-for="p1" value="1">
+    <button data-add-to-cart data-product-id="p2">Agregar crema</button>
+    <button data-add-to-cart data-product-id="p3">Agregar ampolla</button>
+    <button data-add-to-cart data-product-id="p9">Agregar fantasma</button>
+  </main>
   <div data-cart-root>
     <div data-cart-overlay></div>
     <aside data-cart-panel>
@@ -554,6 +556,47 @@ describe('abrir y cerrar el panel', () => {
     document.body.click();
     expect(root().dataset.open).toBe('false');
     expect(document.querySelectorAll('[data-cart-open]')).toHaveLength(1);
+  });
+
+  describe('fondo inerte', () => {
+    const background = () => all('[data-cart-background]');
+
+    it('al arrancar el resto de la página es interactivo', async () => {
+      const { controller } = mount();
+      await controller.ready;
+      expect(background()).toHaveLength(2);
+      expect(background().every((element) => !element.inert)).toBe(true);
+    });
+
+    it('al abrir el panel, cabecera y contenido quedan inertes', async () => {
+      const { controller } = mount();
+      await controller.ready;
+      $('[data-cart-open]').click();
+      expect(background().every((element) => element.inert)).toBe(true);
+      expect(panel().inert).toBe(false);
+    });
+
+    it.each([
+      ['el botón Cerrar', () => $('[data-cart-close]').click()],
+      ['Escape', () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))],
+      ['el fondo', () => $('[data-cart-overlay]').click()],
+    ])('al cerrar con %s vuelven a ser interactivos', async (_label, close) => {
+      const { controller } = mount();
+      await controller.ready;
+      $('[data-cart-open]').click();
+      close();
+      expect(background().every((element) => !element.inert)).toBe(true);
+    });
+
+    it('sin elementos marcados abrir y cerrar funcionan igual', async () => {
+      document.body.innerHTML = PAGE.replaceAll(' data-cart-background', '');
+      const { controller } = mount();
+      await controller.ready;
+      $('[data-cart-open]').click();
+      expect(root().dataset.open).toBe('true');
+      $('[data-cart-close]').click();
+      expect(root().dataset.open).toBe('false');
+    });
   });
 
   it('Escape con el panel cerrado no hace nada', async () => {

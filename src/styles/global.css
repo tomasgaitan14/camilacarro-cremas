@@ -16,6 +16,8 @@
   --color-blush: #f6e4e4;
   --color-brand: #db9c9c;
   --color-edge: #eee5dd;
+  /* borde de campos de texto: 3:1 contra el fondo para que se distingan (WCAG 1.4.11) */
+  --color-control: #948780;
 
   --font-display: 'Outfit Variable', system-ui, sans-serif;
   --font-sans: 'Geist Variable', system-ui, sans-serif;
@@ -52,6 +54,10 @@
     outline: 2px solid var(--color-rose);
     outline-offset: 3px;
     border-radius: 6px;
+  }
+  ::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
   }
   ::selection {
     background: var(--color-brand);
@@ -170,7 +176,7 @@
   .field {
     min-height: 3rem;
     border-radius: 9999px;
-    border: 1px solid var(--color-edge);
+    border: 1px solid var(--color-control);
     background: #fff;
     padding: 0 1.125rem;
     font: inherit;

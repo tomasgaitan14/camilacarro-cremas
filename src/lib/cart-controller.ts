@@ -287,11 +287,17 @@ export function mountCart(doc: Document, deps: CartControllerDeps): CartControll
     succeed('');
   }
 
+  // Con el diálogo abierto, el resto de la página no recibe foco ni lo leen los lectores de pantalla
+  function setBackgroundInert(inert: boolean): void {
+    for (const element of doc.querySelectorAll<HTMLElement>('[data-cart-background]')) element.inert = inert;
+  }
+
   function openPanel(trigger: HTMLElement): void {
     if (!root || !panel) return;
     opener = trigger;
     root.dataset.open = 'true';
     panel.inert = false;
+    setBackgroundInert(true);
     doc.documentElement.dataset.cartLocked = 'true';
     doc.querySelector<HTMLElement>('[data-cart-close]')?.focus();
   }
@@ -300,6 +306,7 @@ export function mountCart(doc: Document, deps: CartControllerDeps): CartControll
     if (!root || !panel || root.dataset.open !== 'true') return;
     root.dataset.open = 'false';
     panel.inert = true;
+    setBackgroundInert(false);
     delete doc.documentElement.dataset.cartLocked;
     opener?.focus();
     opener = null;

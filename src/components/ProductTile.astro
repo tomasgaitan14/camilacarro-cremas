@@ -21,7 +21,8 @@ const lowStock = !soldOut && product.stock <= LOW_STOCK_THRESHOLD;
 ---
 
 <article class="reveal group flex h-full flex-col" style={`--i:${index}`}>
-  <a href={`/productos/${product.slug}`} class="tile relative block overflow-hidden">
+  {/* el título y «Ver ficha» ya enlazan a la ficha: este enlace de la foto sale del orden de teclado y de los lectores */}
+  <a href={`/productos/${product.slug}`} class="tile relative block overflow-hidden" tabindex="-1" aria-hidden="true">
     <div class:list={['shimmer relative w-full', aspect]}>
       {
         image && (
@@ -50,7 +51,7 @@ const lowStock = !soldOut && product.stock <= LOW_STOCK_THRESHOLD;
     </h3>
     {product.summary && <p class="mt-1 line-clamp-2 text-sm text-muted">{product.summary}</p>}
     <p class="mt-1 text-sm text-muted">{product.volume}</p>
-    <a href={`/productos/${product.slug}`} class="mt-1 inline-flex min-h-10 items-center gap-1.5 text-sm text-rose-deep underline decoration-brand underline-offset-4 hover:decoration-current">
+    <a href={`/productos/${product.slug}`} class="mt-1 inline-flex min-h-10 items-center gap-1.5 text-sm text-rose-deep underline decoration-brand underline-offset-4 hover:decoration-current" aria-label={`Ver ficha de ${product.name}`}>
       Ver ficha<Icon name="arrow-right" class="size-3.5" />
     </a>
     <div class="mt-auto flex min-h-[3.25rem] flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-3">

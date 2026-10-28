@@ -6,10 +6,14 @@ const option =
   'block cursor-pointer rounded-full border border-edge bg-surface px-4 py-2.5 text-center text-[0.95rem] transition-[background-color,color,border-color,transform] duration-300 active:scale-[0.98] peer-checked:border-rose peer-checked:bg-rose peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-rose';
 ---
 
-<p data-cart-toast hidden role="status" class="glass pointer-events-none fixed bottom-24 left-1/2 z-50 w-[min(26rem,calc(100%-2rem))] -translate-x-1/2 rounded-2xl px-5 py-3 text-center text-sm text-rose-deep"></p>
+{/* Región en vivo para lectores de pantalla: fuera del panel, porque el panel cerrado es inerte y no se lee */}
+<div data-cart-status aria-live="polite" aria-atomic="true" class="sr-only"></div>
 
-<div class="island">
-  <button type="button" data-cart-open class="btn glass gap-3 py-2.5 pl-4 pr-5 text-ink" aria-label="Ver mi pedido">
+{/* El aviso es solo visual (aria-hidden): el mismo texto ya se anuncia por la región en vivo de arriba */}
+<p data-cart-toast hidden aria-hidden="true" class="glass pointer-events-none fixed bottom-24 left-1/2 z-50 w-[min(26rem,calc(100%-2rem))] -translate-x-1/2 rounded-2xl px-5 py-3 text-center text-sm text-rose-deep"></p>
+
+<div class="island" data-cart-background>
+  <button type="button" data-cart-open class="btn glass gap-3 py-2.5 pl-4 pr-5 text-ink">
     <span class="relative">
       <Icon name="bag" class="size-5" />
     </span>
@@ -105,7 +109,6 @@ const option =
         Enviar pedido por WhatsApp
       </a>
       <p class="mt-3 text-center text-sm text-muted">Camila confirma la disponibilidad y coordina la entrega.</p>
-      <div data-cart-status aria-live="polite" class="sr-only"></div>
     </div>
 
     <template data-cart-item-template>

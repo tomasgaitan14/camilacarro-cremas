@@ -76,7 +76,8 @@ const countLabel = products.length === 1 ? '1 producto' : `${products.length} pr
       </div>
     </div>
 
-    <section aria-label="Resultados" class="mt-10">
+    <section aria-labelledby="resultados" class="mt-10">
+      <h2 id="resultados" class="sr-only">Resultados</h2>
       {
         loadFailed ? (
           <div class="tile p-8">

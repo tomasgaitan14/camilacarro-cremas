@@ -17,6 +17,8 @@ El carrito guarda solo `productId` y cantidad en `localStorage`; precios y stock
 | `data-cart-open` | botón(es) que abren | guarda el foco para devolverlo al cerrar |
 | `data-cart-close` | botón(es) que cierran | recibe el foco al abrir. Escape también cierra |
 
+Los elementos con `data-cart-background` (cabecera, contenido, pie y botón del pedido) quedan `inert` mientras el panel está abierto: así el foco y los lectores de pantalla no salen del diálogo.
+
 Mientras el panel está abierto, `<html>` lleva `data-cart-locked="true"` (por ejemplo para bloquear el scroll).
 
 ## Estados y contenido
@@ -33,7 +35,7 @@ Mientras el panel está abierto, `<html>` lleva `data-cart-locked="true"` (por e
 - `[data-cart-total]`: total formateado.
 - `[data-cart-clear]`: vacía el pedido.
 - `[data-cart-toast]`: aviso breve de un error de acción (por ejemplo, pedir más que el stock) para mostrarlo fuera del panel; se borra solo a los 5 s y al siguiente éxito.
-- `[data-cart-error]`: mensaje de error (`hidden` cuando no hay). `[data-cart-status]`: `aria-live` con confirmaciones.
+- `[data-cart-error]`: mensaje de error (`hidden` cuando no hay). `[data-cart-status]`: `aria-live` con confirmaciones. Tiene que estar **fuera** de `[data-cart-panel]`: el panel cerrado es inerte y un lector de pantalla no leería lo que ocurre ahí.
 
 ## Opciones y envío
 
