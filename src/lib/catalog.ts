@@ -4,8 +4,10 @@ import {
   STORAGE_BUCKET,
   type ImageKind,
   type ProductStatus,
+  type UsageTime,
 } from './constants.ts';
 import { CatalogError } from './errors.ts';
+import { parseFaqs } from './faqs.ts';
 import type { Brand, CartProduct, Category, Product, ProductImage, ProductLine } from './types.ts';
 
 interface BrandRow {
@@ -40,6 +42,8 @@ interface ProductRow {
   usage_steps: string[];
   skin_types: string[];
   warnings: string;
+  usage_time: UsageTime | null;
+  faqs: unknown;
   stock: number;
   status: ProductStatus;
   brand: BrandRow;
@@ -112,6 +116,8 @@ function toProduct(client: SupabaseClient, row: ProductRow): Product {
     usageSteps: row.usage_steps,
     skinTypes: row.skin_types,
     warnings: row.warnings,
+    usageTime: row.usage_time,
+    faqs: parseFaqs(row.faqs),
     stock: row.stock,
     status: row.status,
     images,

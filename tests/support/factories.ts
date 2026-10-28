@@ -22,6 +22,8 @@ export function makeProduct(overrides: Partial<Product> = {}): Product {
     usageSteps: [],
     skinTypes: [],
     warnings: '',
+    usageTime: null,
+    faqs: [],
     stock: 5,
     status: 'published',
     images: [],

@@ -1,86 +1,128 @@
--- Datos de DEMO para desarrollo local (marcas y productos genéricos, no son reales).
+-- Datos de DEMO para desarrollo local, armados con la presentación de SKIN1004 (referencias/).
+-- Son solo para mostrarle a Camila cómo se ve la tienda con productos reales: precios y stock son inventados.
 -- Los productos reales los carga Camila desde el panel /admin.
 
 insert into public.brands (slug, name) values
-  ('marca-demo-a', 'Marca Demo A'),
-  ('marca-demo-b', 'Marca Demo B');
+  ('skin1004', 'SKIN1004');
 
 insert into public.categories (slug, name) values
   ('limpieza', 'Limpieza'),
+  ('tonicos', 'Tónicos'),
   ('tratamiento', 'Tratamiento'),
   ('hidratacion', 'Hidratación'),
   ('proteccion-solar', 'Protección solar');
 
 insert into public.product_lines (brand_id, slug, name, description)
-select id, 'linea-calmante', 'Línea Calmante',
-  'Una rutina simple de tres pasos con ingredientes esenciales para un cuidado suave, pensada para la mayoría de los tipos de piel.'
-from public.brands where slug = 'marca-demo-a';
+select id, 'madagascar-centella', 'Madagascar Centella',
+  'Productos con solo los ingredientes esenciales para un cuidado suave de la piel, pensados para la mayoría de los tipos de piel.'
+from public.brands where slug = 'skin1004';
 
 insert into public.products (
   slug, name, brand_id, category_id, line_id, routine_step, summary, price_ars, volume,
-  key_ingredients, benefits, usage_steps, skin_types, warnings, stock, status
+  key_ingredients, benefits, usage_steps, skin_types, warnings, usage_time, stock, status
 )
 select
   p.slug, p.name, b.id, c.id, l.id, p.routine_step, p.summary, p.price_ars, p.volume,
-  p.key_ingredients, p.benefits, p.usage_steps, p.skin_types, p.warnings, p.stock, 'published'
+  p.key_ingredients, p.benefits, p.usage_steps, p.skin_types, p.warnings, p.usage_time, p.stock, 'published'
 from (values
   (
-    'aceite-limpiador-ligero', 'Aceite limpiador ligero', 'marca-demo-a', 'limpieza', 'linea-calmante', 1::smallint,
-    'Primer paso de la rutina: remueve maquillaje y protector solar con una textura liviana que se enjuaga fácil.',
-    18500, '200 ml',
-    'Extracto de centella asiática, aceites de origen vegetal.',
-    array['Ayuda a remover maquillaje y protector solar', 'Textura liviana, se enjuaga con facilidad', 'No deja sensación grasa en la piel'],
-    array['Aplicá una cantidad adecuada sobre el rostro seco.', 'Masajeá suavemente y sumá agua tibia hasta que se vuelva lechoso.', 'Enjuagá con abundante agua.'],
-    array['Todo tipo de piel'],
+    'light-cleansing-oil', 'Light Cleansing Oil', 'limpieza', 'madagascar-centella', 1::smallint,
+    'Aceite limpiador de textura ligera, parecida al agua, ideal para quienes recién empiezan con limpiadores en aceite.',
+    32900, '200 ml',
+    'Extracto de Centella Asiática y 6 aceites de origen vegetal.',
+    array['Remueve el maquillaje y los residuos que quedan en la piel', 'Elimina el exceso de grasa sin quitar los aceites saludables de la piel', 'Textura ligera, adecuada para quienes se inician en los limpiadores en aceite', 'No comedogénico: disuelve el sebo y ayuda a evitar la congestión de los poros'],
+    array['Bombeá una cantidad adecuada en las manos y aplicá sobre todo el rostro, masajeando suavemente.', 'A medida que el maquillaje se disuelve, emulsioná el aceite sumando agua de a poco.', 'Masajeá hasta que se vuelva lechoso y enjuagá con agua tibia.'],
+    array['La mayoría de los tipos de piel'],
     'Evitar el contacto con los ojos. Suspender el uso ante signos de irritación.',
-    12
+    null,
+    14
   ),
   (
-    'espuma-limpiadora-suave', 'Espuma limpiadora suave', 'marca-demo-b', 'limpieza', null, null,
-    'Limpiador en espuma de pH balanceado para completar la limpieza sin resecar.',
-    14900, '125 ml',
-    'Extracto de centella asiática, derivados de coco.',
-    array['Limpia sin dejar sensación de tirantez', 'pH balanceado', 'Espuma cremosa y delicada'],
-    array['Frotá una cantidad adecuada en las manos húmedas hasta formar espuma.', 'Masajeá el rostro con movimientos suaves.', 'Enjuagá bien con agua tibia.'],
-    array['Mixta', 'Grasa', 'Sensible'],
+    'ampoule-foam', 'Ampoule Foam', 'limpieza', 'madagascar-centella', 1::smallint,
+    'Limpiador en espuma de pH 5, con un acabado suave e hidratante.',
+    24900, '125 ml',
+    'Extracto de Centella Asiática y bicarbonato de sodio.',
+    array['Limpiador en espuma ligeramente ácido, con pH 5', 'Genera una espuma delicada de acabado suave e hidratante', 'Contiene 30% de ampoule de Centella, que calma y equilibra la piel', 'Con derivados del coco que limpian suavemente e hidratan'],
+    array['Poné una cantidad adecuada en las manos húmedas y frotá para crear espuma.', 'Masajeá suavemente el rostro para limpiar y enjuagá bien con agua tibia.'],
+    array['La mayoría de los tipos de piel'],
     'Evitar el contacto con los ojos.',
-    8
+    null,
+    9
   ),
   (
-    'ampolla-calmante', 'Ampolla calmante', 'marca-demo-a', 'tratamiento', 'linea-calmante', 2::smallint,
-    'Concentrado de textura acuosa que hidrata y deja la piel sensible con sensación de calma.',
-    24900, '55 ml',
-    'Extracto de centella asiática.',
-    array['Aporta hidratación inmediata', 'Textura acuosa y no pegajosa', 'Pensada para pieles sensibles'],
-    array['Después de limpiar el rostro, aplicá unas gotas con el gotero.', 'Extendé con suaves toques hasta que se absorba.'],
-    array['Sensible', 'Seca', 'Mixta'],
-    'Hacer una prueba en la muñeca antes del primer uso.',
-    5
+    'toning-toner', 'Toning Toner', 'tonicos', 'madagascar-centella', 2::smallint,
+    'Tónico exfoliante suave, de textura ligera y acuosa, para usar todos los días.',
+    29900, '210 ml',
+    'Extracto de Centella Asiática, PHA (gluconolactona) y ácido hialurónico.',
+    array['Con 84% de extracto de Centella Asiática', 'El PHA actúa de forma gradual y elimina con delicadeza el sebo y las células muertas', 'Deja la piel suave y elástica', 'Con prueba de no comedogenicidad, pensado para todo tipo de piel, incluso con acné'],
+    array['Aplicá una cantidad adecuada en un disco de algodón o directamente en las palmas.', 'Pasalo por el rostro con toquecitos para que se absorba mejor.'],
+    array['Todo tipo de piel', 'Piel con acné'],
+    'Hacer una prueba en una zona pequeña antes del primer uso.',
+    null,
+    11
   ),
   (
-    'crema-calmante-ceramidas', 'Crema calmante con ceramidas', 'marca-demo-a', 'hidratacion', 'linea-calmante', 2::smallint,
-    'Crema de textura gel con ceramidas que ayuda a mantener la barrera de la piel hidratada.',
-    21500, '75 ml',
-    'Ceramidas, colesterol, ácidos grasos, extracto de centella asiática.',
-    array['Ayuda a reforzar la barrera cutánea', 'Hidratación liviana, sin sensación pegajosa', 'Sensación de confort durante el día'],
-    array['Aplicá sobre el rostro limpio y de suaves toquecitos con las palmas.', 'Usala por la mañana y por la noche.'],
-    array['Seca', 'Sensible'],
+    'centella-ampoule', 'Centella Ampoule', 'tratamiento', 'madagascar-centella', 2::smallint,
+    'Ampolla de textura acuosa y no pegajosa, con 100% extracto de Centella Asiática de Madagascar.',
+    38900, '55 ml',
+    'Extracto de Centella Asiática.',
+    array['100% extracto de Centella Asiática de la naturaleza pura de Madagascar', 'Es el producto más vendido de la marca', 'Textura ligera y acuosa, de fórmula no pegajosa', 'Calma e hidrata la piel sensible'],
+    array['Después de limpiar el rostro y aplicar el tónico, tomá una cantidad adecuada con el gotero.', 'Extendela por la piel y dá suaves toques para que se absorba.'],
+    array['Piel sensible'],
+    'Hacer una prueba en una zona pequeña antes del primer uso.',
+    null,
+    3
+  ),
+  (
+    'soothing-cream', 'Soothing Cream', 'hidratacion', 'madagascar-centella', 2::smallint,
+    'Crema calmante de textura gel, ligera y no pegajosa, diseñada para pieles sensibles.',
+    33900, '75 ml',
+    'Extracto de Centella Asiática, ceramida, ácido graso y colesterol.',
+    array['Fórmula calmante diseñada para pieles sensibles', 'Ceramida, colesterol y ácidos grasos ayudan a restaurar la barrera cutánea y a mejorar la hidratación', 'Contiene 72% de Centella Asiática de Madagascar, altamente purificada', 'Textura de gel hidratante que se desliza suavemente sobre la piel'],
+    array['Aplicá una cantidad adecuada en el rostro y dá suaves toquecitos con ambas palmas para facilitar la absorción.'],
+    array['Piel sensible'],
     'Evitar el contacto con los ojos.',
+    null,
     0
   ),
   (
-    'protector-solar-fps-50', 'Protector solar FPS 50', 'marca-demo-a', 'proteccion-solar', 'linea-calmante', 3::smallint,
-    'Último paso de la rutina de día: protección solar de amplio espectro con acabado mate.',
-    19900, '50 ml',
-    'Filtros UV minerales, niacinamida.',
-    array['Protección UVA y UVB de amplio espectro', 'Acabado mate', 'Deja poco residuo blanco'],
-    array['Como último paso de la rutina, aplicá de forma pareja en las zonas expuestas.', 'Volvé a aplicar cada 2 horas si te exponés al sol.'],
+    'air-fit-suncream-plus', 'Air-Fit Suncream Plus SPF 50+', 'proteccion-solar', 'madagascar-centella', 3::smallint,
+    'Protector solar mineral SPF 50+ PA++++, con acabado mate y efecto de tono natural.',
+    31900, '50 ml',
+    'Extracto de Centella Asiática, niacinamida, MadeWhite y Multiex BASAM.',
+    array['Protector solar físico (mineral) con SPF 50+ y PA++++', 'Efecto de tono natural y acabado mate', 'Aplicación suave, con mínima formación de residuos blancos', 'Con niacinamida: combina protección UV con cuidado de la piel', 'Calma la piel con extracto de Centella Asiática'],
+    array['En el último paso de tu rutina, aplicá de manera uniforme en las zonas expuestas a los rayos UV.'],
     array['Todo tipo de piel'],
     'Uso externo. No reemplaza otras medidas de protección solar.',
-    20
+    'morning',
+    17
+  ),
+  (
+    'hyalu-cica-first-ampoule', 'Hyalu-Cica First Ampoule', 'tratamiento', null, null,
+    'Ampolla hidratante de textura acuosa que humecta la piel y la prepara para el siguiente paso de la rutina.',
+    36900, '50 ml',
+    'Fórmula Hyalu-Cica (ácido hialurónico y centella), Comparex, jugo de Betula Platyphylla Japonica y extracto de Anastatica hierochuntica.',
+    array['Humecta rápidamente la piel y la prepara para absorber lo que sigue', 'Alta concentración de la fórmula Hyalu-Cica, que calma e hidrata', 'Textura acuosa que facilita la aplicación y se absorbe rápido', 'Pensada para la piel seca e irritada'],
+    array['Aplicá una cantidad adecuada en el rostro y dá suaves toquecitos con ambas palmas para facilitar la absorción.'],
+    array['Piel seca', 'Piel irritada'],
+    'Hacer una prueba en una zona pequeña antes del primer uso.',
+    null,
+    6
+  ),
+  (
+    'hyalu-cica-moisture-cream', 'Hyalu-Cica Moisture Cream', 'hidratacion', null, null,
+    'Crema hidratante que combina gel y crema, para la piel seca y sensible.',
+    35900, '75 ml',
+    'Fórmula Hyalu-Cica (ácido hialurónico y centella) y colágeno de origen vegetal.',
+    array['Fórmula combinada de gel y crema', 'Hidratación profunda y duradera', 'La fórmula Hyalu-Cica calma e hidrata la piel seca y sensible', 'Con colágeno de origen vegetal'],
+    array['Aplicá y distribuí suavemente sobre la piel, como último paso de tu rutina de cuidado, y dá ligeros toques para que se absorba.'],
+    array['Piel seca', 'Piel sensible'],
+    'Evitar el contacto con los ojos.',
+    null,
+    8
   )
-) as p (slug, name, brand_slug, category_slug, line_slug, routine_step, summary, price_ars, volume,
-        key_ingredients, benefits, usage_steps, skin_types, warnings, stock)
-join public.brands b on b.slug = p.brand_slug
+) as p (slug, name, category_slug, line_slug, routine_step, summary, price_ars, volume,
+        key_ingredients, benefits, usage_steps, skin_types, warnings, usage_time, stock)
+join public.brands b on b.slug = 'skin1004'
 join public.categories c on c.slug = p.category_slug
 left join public.product_lines l on l.slug = p.line_slug and l.brand_id = b.id;

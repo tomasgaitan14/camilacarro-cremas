@@ -6,6 +6,22 @@ export const PRODUCT_STATUS = {
 
 export type ProductStatus = (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
 
+export const USAGE_TIME = {
+  MORNING: 'morning',
+  NIGHT: 'night',
+  BOTH: 'both',
+} as const;
+
+export type UsageTime = (typeof USAGE_TIME)[keyof typeof USAGE_TIME];
+
+export const USAGE_TIME_LABEL: Record<UsageTime, string> = {
+  [USAGE_TIME.MORNING]: 'Por la mañana',
+  [USAGE_TIME.NIGHT]: 'Por la noche',
+  [USAGE_TIME.BOTH]: 'Mañana y noche',
+};
+
+export const MAX_FAQS_PER_PRODUCT = 10;
+
 export const IMAGE_KIND = {
   MAIN: 'main',
   TEXTURE: 'texture',
@@ -53,4 +69,15 @@ export const CART_STORAGE_KEY = 'camilacarro:cart:v1';
 export const CART_CATALOG_URL = '/api/cart-catalog.json';
 // tiempo que el botón "Agregar" muestra su estado de confirmación
 export const ADDED_FEEDBACK_MS = 1600;
+// tiempo que el aviso flotante de un error de acción (ej. superar el stock) queda visible
+export const ERROR_VISIBLE_MS = 5000;
 export const MAX_FILTER_TEXT_LENGTH = 60;
+
+// Caché del catálogo en el servidor: un cambio de Camila tarda como máximo esto en verse
+export const CATALOG_CACHE_TTL_MS = 60_000;
+// Pasado este múltiplo del TTL sin poder renovar, se deja de servir lo viejo y se espera un dato fresco
+export const CATALOG_CACHE_MAX_STALE_FACTOR = 10;
+
+// /api/cart-catalog.json: el navegador lo reutiliza este tiempo y luego revalida con ETag
+export const CART_CATALOG_MAX_AGE_S = 30;
+export const CART_CATALOG_STALE_WHILE_REVALIDATE_S = 120;

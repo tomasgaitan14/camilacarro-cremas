@@ -1,4 +1,4 @@
-import type { ImageKind, ProductStatus } from './constants.ts';
+import type { ImageKind, ProductStatus, UsageTime } from './constants.ts';
 
 export interface Brand {
   id: string;
@@ -28,6 +28,11 @@ export interface ProductImage {
   kind: ImageKind;
 }
 
+export interface Faq {
+  question: string;
+  answer: string;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -44,6 +49,9 @@ export interface Product {
   usageSteps: string[];
   skinTypes: string[];
   warnings: string;
+  // null cuando no hay un dato verificado: la web no lo muestra
+  usageTime: UsageTime | null;
+  faqs: Faq[];
   stock: number;
   status: ProductStatus;
   images: ProductImage[];

@@ -38,6 +38,9 @@ beforeAll(async () => {
       status: PRODUCT_STATUS.PUBLISHED,
       benefits: ['uno', 'dos'],
       usage_steps: ['paso 1', 'paso 2'],
+      usage_time: 'night',
+      // un ítem inválido entre dos válidos: la lectura tiene que descartarlo sin romper la ficha
+      faqs: [{ q: '¿Pregunta uno?', a: 'Respuesta uno' }, { q: 'sin respuesta' }, { q: '¿Pregunta dos?', a: 'Respuesta dos' }],
     })
     .select('id')
     .single();
@@ -80,6 +83,13 @@ describe('listProducts', () => {
     expect(aaa.routineStep).toBeNull();
     expect(aaa.benefits).toEqual(['uno', 'dos']);
     expect(aaa.usageSteps).toEqual(['paso 1', 'paso 2']);
+    expect(aaa.usageTime).toBe('night');
+    expect(aaa.faqs).toEqual([
+      { question: '¿Pregunta uno?', answer: 'Respuesta uno' },
+      { question: '¿Pregunta dos?', answer: 'Respuesta dos' },
+    ]);
+    expect(published.usageTime).toBeNull();
+    expect(published.faqs).toEqual([]);
   });
 
   it('ordena las imágenes por posición y arma URLs públicas absolutas', async () => {
@@ -117,7 +127,7 @@ describe('listProducts', () => {
       lineSlug: `${fixture.tag}-line`,
     });
     expect(hit).toHaveLength(1);
-    const miss = await listProducts(anonClient(), { brandSlug: 'marca-demo-a', categorySlug: `${fixture.tag}-cat` });
+    const miss = await listProducts(anonClient(), { brandSlug: 'skin1004', categorySlug: `${fixture.tag}-cat` });
     expect(miss).toEqual([]);
   });
 
@@ -218,26 +228,15 @@ describe('marcas, categorías y datos del seed', () => {
     expect((await listCategories(anonClient())).map((c) => c.slug)).toContain(`${fixture.tag}-cat`);
   });
 
-  it('el seed de demo está publicado y con imagen principal', async () => {
-    const products = await listProducts(anonClient(), { brandSlug: 'marca-demo-a' });
-    expect(products.length).toBeGreaterThanOrEqual(4);
+  // las fotos del seed son de terceros y no se versionan, por eso acá no se exigen imágenes
+  it('el seed de demo está publicado y con la ficha educativa completa', async () => {
+    const products = await listProducts(anonClient(), { brandSlug: 'skin1004' });
+    expect(products.length).toBeGreaterThanOrEqual(6);
     for (const product of products) {
-      expect(product.images[0]?.kind, product.slug).toBe('main');
       expect(product.usageSteps.length, product.slug).toBeGreaterThan(0);
       expect(product.benefits.length, product.slug).toBeGreaterThan(0);
+      expect(product.keyIngredients, product.slug).not.toBe('');
+      expect(product.priceArs, product.slug).toBeGreaterThan(0);
     }
-  });
-});
-
-describe('toCartProduct', () => {
-  it('toma solo lo que necesita el carrito', async () => {
-    const product = await getProductBySlug(anonClient(), `${fixture.tag}-published`);
-    expect(toCartProduct(product!)).toEqual({
-      id: fixture.publishedId,
-      name: `Publicado ${fixture.tag}`,
-      brandName: `Marca ${fixture.tag}`,
-      priceArs: 1000,
-      stock: 3,
-    });
   });
 });

@@ -20,6 +20,7 @@ supabase/.temp/
 
 # material de referencia de terceros (no se versiona)
 referencias/
+supabase/seed-assets/skin1004/
 
 # worktrees de las versiones de diseño
 .worktrees/

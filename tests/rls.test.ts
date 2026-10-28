@@ -258,6 +258,38 @@ describe('validaciones de datos', () => {
     expect((await admin.from('products').insert(newProduct('long-summary', { summary: 'x'.repeat(401) }))).error?.code).toBe(PG_CHECK_VIOLATION);
   });
 
+  it('acepta un momento de uso válido y preguntas frecuentes', async () => {
+    const faqs = [{ q: '¿Se usa de noche?', a: 'Según las indicaciones del fabricante.' }];
+    const { data, error } = await admin
+      .from('products')
+      .insert(newProduct('usage-ok', { usage_time: 'morning', faqs }))
+      .select('usage_time, faqs')
+      .single();
+    expect(error).toBeNull();
+    expect(data).toEqual({ usage_time: 'morning', faqs });
+  });
+
+  it('el momento de uso es opcional y las preguntas frecuentes arrancan vacías', async () => {
+    const { data } = await admin.from('products').insert(newProduct('usage-default')).select('usage_time, faqs').single();
+    expect(data).toEqual({ usage_time: null, faqs: [] });
+  });
+
+  it.each(['mediodia', 'MORNING', ''])('rechaza el momento de uso "%s"', async (usage_time) => {
+    const { error } = await admin.from('products').insert(newProduct('usage-bad', { usage_time }));
+    expect(error?.code).toBe(PG_CHECK_VIOLATION);
+  });
+
+  it('rechaza preguntas frecuentes que no son una lista', async () => {
+    expect((await admin.from('products').insert(newProduct('faq-object', { faqs: { q: 'x', a: 'y' } }))).error?.code).toBe(PG_CHECK_VIOLATION);
+    expect((await admin.from('products').insert(newProduct('faq-string', { faqs: 'texto' }))).error?.code).toBe(PG_CHECK_VIOLATION);
+  });
+
+  it('rechaza más preguntas frecuentes que el máximo', async () => {
+    const faqs = Array.from({ length: 11 }, (_, i) => ({ q: `pregunta ${i}`, a: 'respuesta' }));
+    const { error } = await admin.from('products').insert(newProduct('faq-many', { faqs }));
+    expect(error?.code).toBe(PG_CHECK_VIOLATION);
+  });
+
   it('rechaza más pasos de uso que el máximo', async () => {
     const steps = Array.from({ length: 13 }, (_, i) => `paso ${i}`);
     const { error } = await admin.from('products').insert(newProduct('many-steps', { usage_steps: steps }));

@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { IMAGE_KIND, STORAGE_BUCKET } from '../src/lib/constants.ts';
 
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
-const ASSETS_DIR = new URL('../supabase/seed-assets/', import.meta.url);
+// Fotos de demo de terceros (SKIN1004): no se versionan, ver .gitignore
+const ASSETS_DIR = new URL('../supabase/seed-assets/skin1004/', import.meta.url);
 const ADMIN_ROLE = 'admin';
 
 process.loadEnvFile(fileURLToPath(new URL('../.env', import.meta.url)));
@@ -50,7 +51,7 @@ async function seedImages(): Promise<void> {
     try {
       file = await readFile(new URL(path, ASSETS_DIR));
     } catch {
-      console.log(`Sin imagen de demo para ${product.slug}, se omite`);
+      console.log(`Sin foto de demo para ${product.slug} en supabase/seed-assets/skin1004/, se omite`);
       continue;
     }
 
