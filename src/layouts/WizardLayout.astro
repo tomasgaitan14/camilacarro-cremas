@@ -1,0 +1,63 @@
+---
+import AdminNotice from '../components/admin/AdminNotice.astro';
+import Icon from '../components/Icon.astro';
+import { ADMIN_PATHS } from '../lib/admin-auth.ts';
+import { WIZARD_STEPS, previousStep, stepNumber, wizardPath, type WizardStepKey } from '../lib/admin-wizard.ts';
+import AdminLayout from './AdminLayout.astro';
+
+interface Props {
+  step: WizardStepKey;
+  // sin id todavía en el primer paso de un producto nuevo
+  productId?: string;
+  title: string;
+  lead: string;
+}
+
+const { step, productId, title, lead } = Astro.props;
+const total = WIZARD_STEPS.length;
+const current = stepNumber(step);
+const before = previousStep(step);
+const backHref = productId && before ? wizardPath(productId, before) : ADMIN_PATHS.HOME;
+---
+
+<AdminLayout title={title}>
+  <div class="mx-auto mt-4 max-w-2xl">
+    <a href={backHref} class="inline-flex min-h-11 items-center gap-2 text-sm text-muted hover:text-ink">
+      <Icon name="arrow-left" class="size-4" />
+      {before ? 'Paso anterior' : 'Volver al inicio'}
+    </a>
+
+    <!-- Una sola cosa por pantalla: acá se ve en qué paso está, sin enlaces para saltear a ciegas -->
+    <ol class="mt-4 grid grid-cols-5 gap-2" aria-label="Pasos para cargar un producto">
+      {
+        WIZARD_STEPS.map((entry, index) => (
+          <li
+            class:list={['h-1.5 rounded-full', index < current ? 'bg-rose' : 'bg-edge']}
+            aria-current={index + 1 === current ? 'step' : undefined}
+          >
+            <span class="sr-only">Paso {index + 1}: {entry.label}</span>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="mt-3 text-sm text-muted">Paso {current} de {total} · {WIZARD_STEPS[current - 1].label}</p>
+
+    <div class="tile mt-5 p-6 sm:p-10">
+      <h1 class="text-3xl font-medium tracking-tighter sm:text-4xl">{title}</h1>
+      <p class="mt-3 max-w-[52ch] text-muted">{lead}</p>
+      <AdminNotice />
+      <slot />
+    </div>
+
+    {
+      productId && (
+        <p class="mt-5 text-center text-sm text-muted">
+          Lo que cargaste ya está guardado como borrador.{' '}
+          <a href={ADMIN_PATHS.HOME} class="underline underline-offset-4 hover:text-ink">
+            Salir y seguir después
+          </a>
+        </p>
+      )
+    }
+  </div>
+</AdminLayout>

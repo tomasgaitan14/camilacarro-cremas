@@ -1,0 +1,23 @@
+---
+// Etiqueta arriba, ayuda opcional y error debajo. El control va en el slot y se vincula con
+// aria-describedby usando los ids `${id}-hint` y `${id}-error` (ver fieldDescribedBy).
+interface Props {
+  id: string;
+  label: string;
+  hint?: string;
+  error?: string;
+  optional?: boolean;
+}
+
+const { id, label, hint, error, optional = false } = Astro.props;
+---
+
+<div class="grid gap-2">
+  <label for={id} class="font-medium">
+    {label}
+    {optional && <span class="ml-1 text-sm font-normal text-muted">(opcional)</span>}
+  </label>
+  {hint && <p id={`${id}-hint`} class="text-sm text-muted">{hint}</p>}
+  <slot />
+  {error && <p id={`${id}-error`} class="text-sm font-medium text-rose-deep">{error}</p>}
+</div>

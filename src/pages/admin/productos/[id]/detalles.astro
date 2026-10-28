@@ -1,0 +1,133 @@
+---
+import AreaField from '../../../../components/admin/AreaField.astro';
+import CheckChips from '../../../../components/admin/CheckChips.astro';
+import ChoiceField from '../../../../components/admin/ChoiceField.astro';
+import FieldShell from '../../../../components/admin/FieldShell.astro';
+import TextField from '../../../../components/admin/TextField.astro';
+import { fieldDescribedBy } from '../../../../components/admin/field-ids.ts';
+import WizardLayout from '../../../../layouts/WizardLayout.astro';
+import { formValues, parseDetailsForm, texts } from '../../../../lib/admin-product-input.ts';
+import { describeAdminFailure, loadAdminProduct } from '../../../../lib/admin-page.ts';
+import { updateDetails } from '../../../../lib/admin-products.ts';
+import { WIZARD_STEP, isFromReview, stepDestination } from '../../../../lib/admin-wizard.ts';
+import { listLines } from '../../../../lib/catalog.ts';
+import { PRODUCT_LIMITS, SKIN_TYPE_OPTIONS, USAGE_TIME_LABEL } from '../../../../lib/constants.ts';
+import { routineStepLabel } from '../../../../lib/routine.ts';
+
+const supabase = Astro.locals.supabase;
+const product = await loadAdminProduct(supabase, Astro.params.id);
+if (!product) return Astro.rewrite('/404');
+
+const fromReview = isFromReview(Astro.url.searchParams);
+let errors: Record<string, string> = {};
+let values: Record<string, string> = {
+  summary: product.summary,
+  volume: product.volume,
+  keyIngredients: product.keyIngredients,
+  benefits: product.benefits.join('\n'),
+  usageSteps: product.usageSteps.join('\n'),
+  warnings: product.warnings,
+  usageTime: product.usageTime ?? '',
+  line: product.line?.id ?? '',
+  routineStep: product.routineStep ? String(product.routineStep) : '',
+};
+let skinTypes: string[] = product.skinTypes;
+let formError = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = parseDetailsForm(form);
+  skinTypes = texts(form, 'skinTypes');
+  if (!parsed.ok) {
+    ({ errors, values } = parsed);
+  } else {
+    try {
+      await updateDetails(supabase, product.id, product.brand.id, parsed.value);
+      return Astro.redirect(stepDestination(product.id, WIZARD_STEP.DETAILS, fromReview), 303);
+    } catch (error) {
+      const message = describeAdminFailure(error);
+      if (!message) throw error;
+      formError = message;
+      values = formValues(form);
+    }
+  }
+}
+
+const lines = (await listLines(supabase)).filter((line) => line.brandId === product.brand.id);
+const ROUTINE_STEPS = [1, 2, 3];
+const ROUTINE_HINT = 'Solo cuenta si elegiste una línea.';
+// un paso que ya estaba guardado y no es de los tres habituales se conserva como opción
+const routineOptions = values.routineStep && !ROUTINE_STEPS.includes(Number(values.routineStep)) ? [...ROUTINE_STEPS, Number(values.routineStep)] : ROUTINE_STEPS;
+const skipHref = stepDestination(product.id, WIZARD_STEP.DETAILS, fromReview);
+// los bloques opcionales se abren solos si ya tienen datos o si hay un error adentro
+const moreOpen = ['volume', 'keyIngredients', 'warnings', 'usageTime', 'skinTypes'].some((key) => errors[key] || (key === 'skinTypes' ? skinTypes.length > 0 : values[key]));
+const routineOpen = Boolean(errors.line || errors.routineStep || values.line);
+---
+
+<WizardLayout
+  step={WIZARD_STEP.DETAILS}
+  productId={product.id}
+  title="Contale a tus clientas sobre el producto"
+  lead="Todo esto es opcional. Lo que no cargues simplemente no se muestra en la ficha. Podés saltear este paso."
+>
+  <form method="post" class="mt-8 grid gap-6" novalidate>
+    {formError && <p role="alert" class="rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{formError}</p>}
+
+    <AreaField id="summary" label="¿Para qué sirve?" value={values.summary} error={errors.summary} rows={3} maxlength={PRODUCT_LIMITS.SUMMARY} hint="Una o dos frases, con tus palabras." />
+    <AreaField
+      id="usageSteps"
+      label="¿Cómo se usa?"
+      value={values.usageSteps}
+      error={errors.usageSteps}
+      rows={4}
+      hint="Un paso por renglón."
+      placeholder={'Limpiá la cara y secala\nAplicá una cantidad pequeña\nMasajeá hasta que se absorba'}
+    />
+    <AreaField id="benefits" label="¿Qué beneficios tiene?" value={values.benefits} error={errors.benefits} rows={4} hint="Uno por renglón." placeholder={'Hidrata en profundidad\nCalma la piel'} />
+
+    <details class="rounded-3xl border border-edge px-5 py-4" open={moreOpen}>
+      <summary class="min-h-10 cursor-pointer font-medium">Más datos del producto</summary>
+      <div class="mt-5 grid gap-6">
+        <TextField id="volume" label="Contenido" value={values.volume} error={errors.volume} optional maxlength={PRODUCT_LIMITS.VOLUME} placeholder="50 ml" />
+        <AreaField id="keyIngredients" label="Ingredientes principales" value={values.keyIngredients} error={errors.keyIngredients} rows={3} maxlength={PRODUCT_LIMITS.KEY_INGREDIENTS} />
+        <CheckChips name="skinTypes" legend="¿Para qué tipo de piel es?" options={SKIN_TYPE_OPTIONS} selected={skinTypes} error={errors.skinTypes} />
+        <FieldShell id="usageTime" label="¿Cuándo se usa?" error={errors.usageTime} optional>
+          <select id="usageTime" name="usageTime" class="field w-full text-base" aria-invalid={errors.usageTime ? 'true' : undefined} aria-describedby={fieldDescribedBy('usageTime', { error: errors.usageTime })}>
+            <option value="" selected={values.usageTime === ''}>No lo sé / no importa</option>
+            {Object.entries(USAGE_TIME_LABEL).map(([value, label]) => <option value={value} selected={values.usageTime === value}>{label}</option>)}
+          </select>
+        </FieldShell>
+        <AreaField id="warnings" label="Precauciones" value={values.warnings} error={errors.warnings} rows={3} maxlength={PRODUCT_LIMITS.WARNINGS} hint="Por ejemplo: evitar el contacto con los ojos." />
+      </div>
+    </details>
+
+    <details class="rounded-3xl border border-edge px-5 py-4" open={routineOpen}>
+      <summary class="min-h-10 cursor-pointer font-medium">Rutina: ¿forma parte de una línea?</summary>
+      <div class="mt-5 grid gap-6">
+        <ChoiceField
+          id="line"
+          label="Línea de la marca"
+          options={lines}
+          value={values.line}
+          newValue={values.lineNew}
+          error={errors.line}
+          emptyLabel="Ninguna"
+          newLabel="Nombre de la línea nueva"
+          hint="Si el producto es parte de una línea (por ejemplo «Línea Calmante»), aparece en la sección de rutinas."
+          optional
+        />
+        <FieldShell id="routineStep" label="¿En qué paso de la rutina va?" error={errors.routineStep} hint={ROUTINE_HINT} optional>
+          <select id="routineStep" name="routineStep" class="field w-full text-base" aria-invalid={errors.routineStep ? 'true' : undefined} aria-describedby={fieldDescribedBy('routineStep', { hint: ROUTINE_HINT, error: errors.routineStep })}>
+            <option value="" selected={values.routineStep === ''}>Sin paso</option>
+            {routineOptions.map((step) => <option value={String(step)} selected={values.routineStep === String(step)}>{step}. {routineStepLabel(step)}</option>)}
+          </select>
+        </FieldShell>
+      </div>
+    </details>
+
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <button type="submit" class="btn btn-solid w-full sm:w-auto">Guardar y seguir</button>
+      <a href={skipHref} class="btn btn-ghost w-full sm:w-auto">Saltear este paso</a>
+    </div>
+  </form>
+</WizardLayout>

@@ -182,6 +182,33 @@
     font: inherit;
   }
 
+  /* Campos del panel: ocupan todo el ancho y marcan el error con el color de acento oscuro */
+  .field-area {
+    width: 100%;
+    min-height: 7rem;
+    border-radius: 1.5rem;
+    border: 1px solid var(--color-control);
+    background: #fff;
+    padding: 0.85rem 1.125rem;
+    font: inherit;
+    line-height: 1.5;
+  }
+  .field[aria-invalid='true'],
+  .field-area[aria-invalid='true'] {
+    border-color: var(--color-rose-deep);
+    border-width: 2px;
+  }
+  /* casillas de «tipo de piel»: el cuadrito real queda oculto pero accesible; el chip es lo que se ve */
+  .check-chip input:checked + span {
+    background: var(--color-rose);
+    border-color: var(--color-rose);
+    color: #fff;
+  }
+  .check-chip input:focus-visible + span {
+    outline: 2px solid var(--color-rose);
+    outline-offset: 3px;
+  }
+
   /* ---------- Movimiento ---------- */
   .shimmer {
     background: linear-gradient(100deg, var(--color-blush) 30%, #fbf1f1 50%, var(--color-blush) 70%);

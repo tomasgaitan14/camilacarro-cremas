@@ -1,0 +1,42 @@
+---
+import { mainImage } from '../../lib/catalog.ts';
+import { PRODUCT_STATUS } from '../../lib/constants.ts';
+import type { Product } from '../../lib/types.ts';
+import Icon from '../Icon.astro';
+
+// Fila de un producto en las listas del panel: foto, nombre, estado y un lugar (slot) para las acciones
+interface Props {
+  product: Product;
+}
+
+const { product } = Astro.props;
+const photo = mainImage(product);
+const STATUS_LABEL = {
+  [PRODUCT_STATUS.PUBLISHED]: 'Se ve en la tienda',
+  [PRODUCT_STATUS.DRAFT]: 'Oculto',
+  [PRODUCT_STATUS.ARCHIVED]: 'Eliminado',
+} as const;
+---
+
+<li id={`p-${product.id}`} class="grid gap-4 border-t border-edge py-5 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+  <div class="flex min-w-0 items-center gap-4">
+    <div class="size-16 shrink-0 overflow-hidden rounded-2xl bg-blush">
+      {
+        photo ? (
+          <img src={photo.url} alt="" width="64" height="64" loading="lazy" class="size-full object-cover" />
+        ) : (
+          <span class="grid size-full place-items-center text-rose-deep"><Icon name="image" class="size-6" /></span>
+        )
+      }
+    </div>
+    <div class="min-w-0">
+      <p class="truncate font-medium">{product.name}</p>
+      <p class="truncate text-sm text-muted">{product.brand.name} · {product.category.name}</p>
+      <p class="mt-1 inline-flex items-center gap-2 text-sm">
+        <span class:list={['size-2 rounded-full', product.status === PRODUCT_STATUS.PUBLISHED ? 'bg-rose' : 'bg-control']} aria-hidden="true"></span>
+        {STATUS_LABEL[product.status]}
+      </p>
+    </div>
+  </div>
+  <div class="sm:justify-self-end"><slot /></div>
+</li>

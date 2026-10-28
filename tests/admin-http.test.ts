@@ -74,7 +74,7 @@ describe('protección del panel (sitio compilado en producción)', () => {
     const response = await get('/admin', { headers: { cookie: await sessionCookie({ role: 'admin' }) } });
     expect(response.status).toBe(200);
     const html = await response.text();
-    expect(html).toContain('Entraste bien a tu panel');
+    expect(html).toContain('¿Qué querés hacer hoy?');
     expect(html).toContain('Salir');
   });
 

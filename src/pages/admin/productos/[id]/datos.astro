@@ -1,0 +1,70 @@
+---
+import ChoiceField from '../../../../components/admin/ChoiceField.astro';
+import TextField from '../../../../components/admin/TextField.astro';
+import WizardLayout from '../../../../layouts/WizardLayout.astro';
+import { formValues, parseBasicsForm } from '../../../../lib/admin-product-input.ts';
+import { describeAdminFailure, loadAdminProduct } from '../../../../lib/admin-page.ts';
+import { updateBasics } from '../../../../lib/admin-products.ts';
+import { WIZARD_STEP, isFromReview, stepDestination } from '../../../../lib/admin-wizard.ts';
+import { listBrands, listCategories } from '../../../../lib/catalog.ts';
+
+const supabase = Astro.locals.supabase;
+const product = await loadAdminProduct(supabase, Astro.params.id);
+if (!product) return Astro.rewrite('/404');
+
+let errors: Record<string, string> = {};
+let values: Record<string, string> = {
+  name: product.name,
+  brand: product.brand.id,
+  category: product.category.id,
+};
+let formError = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = parseBasicsForm(form);
+  if (!parsed.ok) {
+    ({ errors, values } = parsed);
+  } else {
+    try {
+      await updateBasics(supabase, product.id, parsed.value);
+      return Astro.redirect(stepDestination(product.id, WIZARD_STEP.BASICS, isFromReview(Astro.url.searchParams)), 303);
+    } catch (error) {
+      const message = describeAdminFailure(error);
+      if (!message) throw error;
+      formError = message;
+      values = formValues(form);
+    }
+  }
+}
+
+const [brands, categories] = await Promise.all([listBrands(supabase), listCategories(supabase)]);
+---
+
+<WizardLayout step={WIZARD_STEP.BASICS} productId={product.id} title="¿Qué producto es?" lead="Podés corregir el nombre, la marca o el tipo.">
+  <form method="post" class="mt-8 grid gap-6" novalidate>
+    {formError && <p role="alert" class="rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{formError}</p>}
+    <TextField id="name" label="Nombre del producto" value={values.name} error={errors.name} maxlength={120} />
+    <ChoiceField
+      id="brand"
+      label="Marca"
+      options={brands}
+      value={values.brand}
+      newValue={values.brandNew}
+      error={errors.brand}
+      emptyLabel="Elegí una marca"
+      newLabel="Nombre de la marca nueva"
+    />
+    <ChoiceField
+      id="category"
+      label="¿Qué tipo de producto es?"
+      options={categories}
+      value={values.category}
+      newValue={values.categoryNew}
+      error={errors.category}
+      emptyLabel="Elegí un tipo"
+      newLabel="Nombre del tipo nuevo"
+    />
+    <button type="submit" class="btn btn-solid w-full sm:w-auto sm:justify-self-start">Guardar y seguir</button>
+  </form>
+</WizardLayout>

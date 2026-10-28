@@ -1,0 +1,30 @@
+---
+import FieldShell from './FieldShell.astro';
+import { fieldDescribedBy } from './field-ids.ts';
+
+interface Props {
+  id: string;
+  label: string;
+  value?: string;
+  hint?: string;
+  error?: string;
+  optional?: boolean;
+  rows?: number;
+  maxlength?: number;
+  placeholder?: string;
+}
+
+const { id, label, value = '', hint, error, optional = true, rows = 4, maxlength, placeholder } = Astro.props;
+---
+
+<FieldShell id={id} label={label} hint={hint} error={error} optional={optional}>
+  <textarea
+    id={id}
+    name={id}
+    class="field-area text-base"
+    rows={rows}
+    maxlength={maxlength}
+    placeholder={placeholder}
+    aria-invalid={error ? 'true' : undefined}
+    aria-describedby={fieldDescribedBy(id, { hint, error })}>{value}</textarea>
+</FieldShell>

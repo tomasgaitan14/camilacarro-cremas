@@ -1,0 +1,44 @@
+---
+import TextField from '../../../../components/admin/TextField.astro';
+import WizardLayout from '../../../../layouts/WizardLayout.astro';
+import { formValues, parsePriceStockForm } from '../../../../lib/admin-product-input.ts';
+import { describeAdminFailure, loadAdminProduct } from '../../../../lib/admin-page.ts';
+import { updatePriceStock } from '../../../../lib/admin-products.ts';
+import { WIZARD_STEP, isFromReview, stepDestination } from '../../../../lib/admin-wizard.ts';
+
+const supabase = Astro.locals.supabase;
+const product = await loadAdminProduct(supabase, Astro.params.id);
+if (!product) return Astro.rewrite('/404');
+
+let errors: Record<string, string> = {};
+// un borrador nuevo tiene precio 0: se muestra el campo vacío en vez de «0»
+let values: Record<string, string> = { price: product.priceArs > 0 ? String(product.priceArs) : '', stock: String(product.stock) };
+let formError = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const parsed = parsePriceStockForm(form);
+  if (!parsed.ok) {
+    ({ errors, values } = parsed);
+  } else {
+    try {
+      await updatePriceStock(supabase, product.id, parsed.value);
+      return Astro.redirect(stepDestination(product.id, WIZARD_STEP.PRICE, isFromReview(Astro.url.searchParams)), 303);
+    } catch (error) {
+      const message = describeAdminFailure(error);
+      if (!message) throw error;
+      formError = message;
+      values = formValues(form);
+    }
+  }
+}
+---
+
+<WizardLayout step={WIZARD_STEP.PRICE} productId={product.id} title="¿Cuánto cuesta y cuántos tenés?" lead="Estos dos datos son los que se actualizan más seguido. Después los cambiás en un toque desde el inicio.">
+  <form method="post" class="mt-8 grid gap-6" novalidate>
+    {formError && <p role="alert" class="rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{formError}</p>}
+    <TextField id="price" label="Precio en pesos" value={values.price} error={errors.price} inputmode="numeric" hint="Sin centavos. Por ejemplo: 12500" placeholder="12500" autofocus />
+    <TextField id="stock" label="Unidades que tenés" value={values.stock} error={errors.stock} inputmode="numeric" hint="Si no tenés ahora, poné 0 y se muestra como agotado." />
+    <button type="submit" class="btn btn-solid w-full sm:w-auto sm:justify-self-start">Guardar y seguir</button>
+  </form>
+</WizardLayout>

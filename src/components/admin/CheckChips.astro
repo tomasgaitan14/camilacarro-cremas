@@ -1,0 +1,30 @@
+---
+interface Props {
+  name: string;
+  legend: string;
+  hint?: string;
+  options: readonly string[];
+  selected: readonly string[];
+  error?: string;
+}
+
+const { name, legend, hint, options, selected, error } = Astro.props;
+// los valores que ya estaban guardados y no están entre las opciones se conservan como casillas más
+const all = [...options, ...selected.filter((value) => !options.includes(value))];
+---
+
+<fieldset class="grid gap-2">
+  <legend class="font-medium">{legend} <span class="ml-1 text-sm font-normal text-muted">(opcional)</span></legend>
+  {hint && <p class="text-sm text-muted">{hint}</p>}
+  <div class="flex flex-wrap gap-2">
+    {
+      all.map((value) => (
+        <label class="check-chip cursor-pointer">
+          <input type="checkbox" class="sr-only" name={name} value={value} checked={selected.includes(value)} />
+          <span class="chip min-h-10">{value}</span>
+        </label>
+      ))
+    }
+  </div>
+  {error && <p class="text-sm font-medium text-rose-deep">{error}</p>}
+</fieldset>

@@ -1,0 +1,129 @@
+---
+import Icon from '../../../../components/Icon.astro';
+import WizardLayout from '../../../../layouts/WizardLayout.astro';
+import { addExtraImage, removeImage, setMainImage } from '../../../../lib/admin-product-images.ts';
+import {
+  UPLOAD_TOO_BIG_ERROR,
+  describeAdminFailure,
+  loadAdminProduct,
+  uploadIsTooBig,
+  uploadedFile,
+} from '../../../../lib/admin-page.ts';
+import { withNotice } from '../../../../lib/admin-notices.ts';
+import { WIZARD_STEP, isFromReview, stepDestination, wizardPath } from '../../../../lib/admin-wizard.ts';
+import { IMAGE_MAX_PER_PRODUCT, IMAGE_KIND } from '../../../../lib/constants.ts';
+
+const PHOTO_INTENT = { MAIN: 'main', EXTRA: 'extra', REMOVE: 'remove' } as const;
+const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp';
+const FILE_CHOOSER_CLASS =
+  'field w-full py-2 text-base file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-blush file:px-4 file:py-2 file:text-sm file:font-medium file:text-rose-deep';
+
+const supabase = Astro.locals.supabase;
+const product = await loadAdminProduct(supabase, Astro.params.id);
+if (!product) return Astro.rewrite('/404');
+
+const fromReview = isFromReview(Astro.url.searchParams);
+const here = wizardPath(product.id, WIZARD_STEP.PHOTO) + (fromReview ? '?de=revisar' : '');
+let formError = '';
+
+if (Astro.request.method === 'POST') {
+  if (uploadIsTooBig(Astro.request)) {
+    formError = UPLOAD_TOO_BIG_ERROR;
+  } else {
+    const form = await Astro.request.formData();
+    const intent = form.get('intent');
+    try {
+      if (intent === PHOTO_INTENT.MAIN || intent === PHOTO_INTENT.EXTRA) {
+        const file = uploadedFile(form, 'photo');
+        if (!file) {
+          formError = 'Elegí una foto para subir.';
+        } else if (intent === PHOTO_INTENT.MAIN) {
+          await setMainImage(supabase, product, file);
+          return Astro.redirect(stepDestination(product.id, WIZARD_STEP.PHOTO, fromReview), 303);
+        } else {
+          await addExtraImage(supabase, product, file);
+          return Astro.redirect(withNotice(here, 'foto-guardada'), 303);
+        }
+      } else if (intent === PHOTO_INTENT.REMOVE) {
+        const imageId = form.get('imageId');
+        if (typeof imageId === 'string') await removeImage(supabase, product.id, imageId);
+        return Astro.redirect(withNotice(here, 'foto-quitada'), 303);
+      }
+    } catch (error) {
+      const message = describeAdminFailure(error);
+      if (!message) throw error;
+      formError = message;
+    }
+  }
+}
+
+const photos = product.images;
+const hasMain = photos.some((photo) => photo.kind === IMAGE_KIND.MAIN);
+const canAddMore = photos.length < IMAGE_MAX_PER_PRODUCT;
+---
+
+<WizardLayout
+  step={WIZARD_STEP.PHOTO}
+  productId={product.id}
+  title={hasMain ? 'La foto del producto' : 'Subí una foto del producto'}
+  lead="La foto principal es la que ve tu clienta primero. Sacala con buena luz y con el producto bien a la vista."
+>
+  {formError && <p role="alert" class="mt-6 rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{formError}</p>}
+
+  {
+    photos.length > 0 && (
+      <ul class="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3" aria-label="Fotos cargadas">
+        {photos.map((photo) => (
+          <li class="grid gap-2">
+            <div class="aspect-square overflow-hidden rounded-3xl bg-blush">
+              <img src={photo.url} alt={photo.alt} width="300" height="300" loading="lazy" class="size-full object-cover" />
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm text-muted">{photo.kind === IMAGE_KIND.MAIN ? 'Foto principal' : `Foto ${photo.position + 1}`}</span>
+              <form method="post" action={here}>
+                <input type="hidden" name="intent" value={PHOTO_INTENT.REMOVE} />
+                <input type="hidden" name="imageId" value={photo.id} />
+                <button type="submit" class="inline-flex min-h-10 items-center gap-1 rounded-full px-3 text-sm text-rose-deep hover:bg-blush">
+                  <Icon name="x" class="size-4" /> Quitar
+                </button>
+              </form>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  <form method="post" action={here} enctype="multipart/form-data" class="mt-8 grid gap-3">
+    <input type="hidden" name="intent" value={PHOTO_INTENT.MAIN} />
+    <label for="photo-main" class="font-medium">{hasMain ? 'Cambiar la foto principal' : 'Elegí la foto principal'}</label>
+    <p class="text-sm text-muted">Puede ser de la galería o sacada en el momento. Se achica sola, no hace falta que la edites.</p>
+    <input id="photo-main" name="photo" type="file" accept={ACCEPTED_TYPES} required class={FILE_CHOOSER_CLASS} />
+    <button type="submit" class="btn btn-solid w-full sm:w-auto sm:justify-self-start">
+      <Icon name="camera" />
+      {hasMain ? 'Cambiar foto' : 'Guardar foto y seguir'}
+    </button>
+  </form>
+
+  {
+    hasMain && canAddMore && (
+      <form method="post" action={here} enctype="multipart/form-data" class="mt-10 grid gap-3 border-t border-edge pt-8">
+        <input type="hidden" name="intent" value={PHOTO_INTENT.EXTRA} />
+        <label for="photo-extra" class="font-medium">
+          Agregar otra foto <span class="ml-1 text-sm font-normal text-muted">(opcional)</span>
+        </label>
+        <p class="text-sm text-muted">Por ejemplo, la textura o cómo se aplica. Hasta {IMAGE_MAX_PER_PRODUCT} fotos en total.</p>
+        <input id="photo-extra" name="photo" type="file" accept={ACCEPTED_TYPES} required class={FILE_CHOOSER_CLASS} />
+        <button type="submit" class="btn btn-ghost w-full sm:w-auto sm:justify-self-start">Agregar foto</button>
+      </form>
+    )
+  }
+
+  {
+    hasMain && (
+      <a href={stepDestination(product.id, WIZARD_STEP.PHOTO, fromReview)} class="btn btn-solid mt-10 w-full sm:w-auto">
+        {fromReview ? 'Volver a revisar' : 'Siguiente: precio y unidades'}
+      </a>
+    )
+  }
+</WizardLayout>

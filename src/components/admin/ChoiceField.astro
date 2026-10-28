@@ -1,0 +1,64 @@
+---
+import { NEW_CHOICE_VALUE } from '../../lib/constants.ts';
+import FieldShell from './FieldShell.astro';
+import { fieldDescribedBy } from './field-ids.ts';
+
+// Desplegable con «+ Agregar nueva…»: al elegirla aparece el campo para escribir el nombre.
+// Sin JavaScript el campo del nombre queda a la vista, así que también se puede usar.
+interface Props {
+  id: string;
+  label: string;
+  options: ReadonlyArray<{ id: string; name: string }>;
+  value?: string;
+  newValue?: string;
+  newLabel: string;
+  emptyLabel: string;
+  hint?: string;
+  error?: string;
+  optional?: boolean;
+}
+
+const { id, label, options, value = '', newValue = '', newLabel, emptyLabel, hint, error, optional } = Astro.props;
+const newId = `${id}New`;
+---
+
+<FieldShell id={id} label={label} hint={hint} error={error} optional={optional}>
+  <div data-choice class="grid gap-3">
+    <select
+      id={id}
+      name={id}
+      class="field w-full text-base"
+      aria-invalid={error ? 'true' : undefined}
+      aria-describedby={fieldDescribedBy(id, { hint, error })}
+      data-choice-select
+    >
+      <option value="" selected={value === ''}>{emptyLabel}</option>
+      {options.map((option) => <option value={option.id} selected={value === option.id}>{option.name}</option>)}
+      <option value={NEW_CHOICE_VALUE} selected={value === NEW_CHOICE_VALUE}>+ Agregar nueva…</option>
+    </select>
+    <div data-choice-new class="grid gap-2" hidden={value !== NEW_CHOICE_VALUE}>
+      <label for={newId} class="text-sm text-muted">{newLabel}</label>
+      <input id={newId} name={newId} type="text" class="field w-full text-base" value={newValue} autocomplete="off" maxlength="80" />
+    </div>
+  </div>
+</FieldShell>
+
+<noscript><style>[data-choice-new][hidden] { display: grid !important; }</style></noscript>
+
+<script>
+  import { NEW_CHOICE_VALUE } from '../../lib/constants.ts';
+
+  // Muestra el campo del nombre solo cuando se eligió «+ Agregar nueva…»
+  for (const root of document.querySelectorAll<HTMLElement>('[data-choice]')) {
+    const select = root.querySelector<HTMLSelectElement>('[data-choice-select]');
+    const extra = root.querySelector<HTMLElement>('[data-choice-new]');
+    const input = extra?.querySelector('input');
+    if (!select || !extra || !input) continue;
+    const sync = () => {
+      const adding = select.value === NEW_CHOICE_VALUE;
+      extra.hidden = !adding;
+      if (adding) input.focus();
+    };
+    select.addEventListener('change', sync);
+  }
+</script>

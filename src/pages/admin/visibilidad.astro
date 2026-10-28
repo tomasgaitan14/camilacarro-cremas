@@ -1,0 +1,111 @@
+---
+import AdminNotice from '../../components/admin/AdminNotice.astro';
+import ProductRow from '../../components/admin/ProductRow.astro';
+import Icon from '../../components/Icon.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { ADMIN_PATHS } from '../../lib/admin-auth.ts';
+import { withNotice } from '../../lib/admin-notices.ts';
+import { describeAdminFailure } from '../../lib/admin-page.ts';
+import { text } from '../../lib/admin-product-input.ts';
+import { hideProduct, publishProduct, restoreProduct } from '../../lib/admin-products.ts';
+import { ADMIN_ROUTES, BLOCKER_STEP, productBlockers, wizardPath } from '../../lib/admin-wizard.ts';
+import { PUBLISH_BLOCKER_MESSAGE } from '../../lib/admin-products.ts';
+import { listProductsForAdmin } from '../../lib/catalog.ts';
+import { PRODUCT_STATUS } from '../../lib/constants.ts';
+
+const VISIBILITY_INTENT = { SHOW: 'show', HIDE: 'hide', RESTORE: 'restore' } as const;
+
+const supabase = Astro.locals.supabase;
+let rowErrors: Record<string, string> = {};
+let pageError = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const productId = text(form, 'productId');
+  const intent = text(form, 'intent');
+  try {
+    if (intent === VISIBILITY_INTENT.SHOW) {
+      await publishProduct(supabase, productId);
+      return Astro.redirect(withNotice(ADMIN_ROUTES.VISIBILITY, 'publicado', `p-${productId}`), 303);
+    }
+    if (intent === VISIBILITY_INTENT.HIDE) {
+      await hideProduct(supabase, productId);
+      return Astro.redirect(withNotice(ADMIN_ROUTES.VISIBILITY, 'oculto', `p-${productId}`), 303);
+    }
+    if (intent === VISIBILITY_INTENT.RESTORE) {
+      await restoreProduct(supabase, productId);
+      return Astro.redirect(withNotice(ADMIN_ROUTES.VISIBILITY, 'recuperado', `p-${productId}`), 303);
+    }
+  } catch (error) {
+    const message = describeAdminFailure(error);
+    if (!message) throw error;
+    if (productId) rowErrors = { [productId]: message };
+    else pageError = message;
+  }
+}
+
+const all = await listProductsForAdmin(supabase);
+const active = all.filter((product) => product.status !== PRODUCT_STATUS.ARCHIVED);
+const archived = all.filter((product) => product.status === PRODUCT_STATUS.ARCHIVED);
+---
+
+<AdminLayout title="Ocultar o mostrar">
+  <a href={ADMIN_PATHS.HOME} class="mt-4 inline-flex min-h-11 items-center gap-2 text-sm text-muted hover:text-ink">
+    <Icon name="arrow-left" class="size-4" /> Volver al inicio
+  </a>
+  <h1 class="mt-2 text-3xl font-medium tracking-tighter sm:text-4xl">Ocultar o mostrar</h1>
+  <p class="mt-3 max-w-[56ch] text-muted">Un producto oculto no se ve en la tienda, pero no se pierde nada: lo volvés a mostrar cuando quieras.</p>
+  <AdminNotice />
+  {pageError && <p role="alert" class="mt-6 rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{pageError}</p>}
+
+  {
+    active.length === 0 ? (
+      <p class="tile mt-8 p-8 text-muted">Todavía no cargaste productos. Empezá desde el inicio con «Agregar un producto».</p>
+    ) : (
+      <ul class="tile mt-8 px-6 py-2 sm:px-8">
+        {active.map((product) => {
+          const published = product.status === PRODUCT_STATUS.PUBLISHED;
+          const blockers = published ? [] : productBlockers(product);
+          return (
+            <ProductRow product={product}>
+              <form method="post" class="grid gap-2 sm:justify-items-end">
+                <input type="hidden" name="productId" value={product.id} />
+                <input type="hidden" name="intent" value={published ? VISIBILITY_INTENT.HIDE : VISIBILITY_INTENT.SHOW} />
+                {published ? (
+                  <button type="submit" class="btn btn-ghost btn-sm"><Icon name="eye-slash" class="size-4" /> Ocultar</button>
+                ) : (
+                  <button type="submit" class="btn btn-solid btn-sm" disabled={blockers.length > 0}><Icon name="eye" class="size-4" /> Mostrar</button>
+                )}
+                {blockers.map((blocker) => (
+                  <a href={wizardPath(product.id, BLOCKER_STEP[blocker])} class="text-sm text-rose-deep underline underline-offset-4">
+                    {PUBLISH_BLOCKER_MESSAGE[blocker]} Completarlo
+                  </a>
+                ))}
+                {rowErrors[product.id] && <p role="alert" class="text-sm font-medium text-rose-deep">{rowErrors[product.id]}</p>}
+              </form>
+            </ProductRow>
+          );
+        })}
+      </ul>
+    )
+  }
+
+  {
+    archived.length > 0 && (
+      <details class="mt-10 rounded-3xl border border-edge px-5 py-4">
+        <summary class="min-h-10 cursor-pointer font-medium">Productos eliminados ({archived.length})</summary>
+        <ul class="mt-2">
+          {archived.map((product) => (
+            <ProductRow product={product}>
+              <form method="post">
+                <input type="hidden" name="productId" value={product.id} />
+                <input type="hidden" name="intent" value={VISIBILITY_INTENT.RESTORE} />
+                <button type="submit" class="btn btn-ghost btn-sm">Recuperar</button>
+              </form>
+            </ProductRow>
+          ))}
+        </ul>
+      </details>
+    )
+  }
+</AdminLayout>

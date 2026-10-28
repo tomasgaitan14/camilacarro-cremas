@@ -1,0 +1,172 @@
+---
+import Icon from '../../../../components/Icon.astro';
+import WizardLayout from '../../../../layouts/WizardLayout.astro';
+import { ADMIN_PATHS } from '../../../../lib/admin-auth.ts';
+import { withNotice } from '../../../../lib/admin-notices.ts';
+import { describeAdminFailure, loadAdminProduct } from '../../../../lib/admin-page.ts';
+import { archiveProduct, hideProduct, publishProduct, restoreProduct } from '../../../../lib/admin-products.ts';
+import { BLOCKER_STEP, REVIEW_RETURN_PARAM, WIZARD_STEP, productBlockers, wizardPath, type WizardStepKey } from '../../../../lib/admin-wizard.ts';
+import { PUBLISH_BLOCKER_MESSAGE } from '../../../../lib/admin-products.ts';
+import { mainImage } from '../../../../lib/catalog.ts';
+import { PRODUCT_STATUS, USAGE_TIME_LABEL } from '../../../../lib/constants.ts';
+import { formatArs } from '../../../../lib/money.ts';
+
+const REVIEW_INTENT = { PUBLISH: 'publish', HIDE: 'hide', ARCHIVE: 'archive', RESTORE: 'restore' } as const;
+
+const supabase = Astro.locals.supabase;
+const product = await loadAdminProduct(supabase, Astro.params.id);
+if (!product) return Astro.rewrite('/404');
+
+const here = wizardPath(product.id, WIZARD_STEP.REVIEW);
+let formError = '';
+
+if (Astro.request.method === 'POST') {
+  const intent = (await Astro.request.formData()).get('intent');
+  try {
+    if (intent === REVIEW_INTENT.PUBLISH) {
+      await publishProduct(supabase, product.id);
+      return Astro.redirect(withNotice(here, 'publicado'), 303);
+    }
+    if (intent === REVIEW_INTENT.HIDE) {
+      await hideProduct(supabase, product.id);
+      return Astro.redirect(withNotice(here, 'oculto'), 303);
+    }
+    if (intent === REVIEW_INTENT.RESTORE) {
+      await restoreProduct(supabase, product.id);
+      return Astro.redirect(withNotice(here, 'recuperado'), 303);
+    }
+    if (intent === REVIEW_INTENT.ARCHIVE) {
+      await archiveProduct(supabase, product.id);
+      return Astro.redirect(withNotice(ADMIN_PATHS.HOME, 'eliminado'), 303);
+    }
+  } catch (error) {
+    const message = describeAdminFailure(error);
+    if (!message) throw error;
+    formError = message;
+  }
+}
+
+const blockers = productBlockers(product);
+const photo = mainImage(product);
+const editLink = (step: WizardStepKey) => `${wizardPath(product.id, step)}?${REVIEW_RETURN_PARAM}=${WIZARD_STEP.REVIEW}`;
+const isPublished = product.status === PRODUCT_STATUS.PUBLISHED;
+const isArchived = product.status === PRODUCT_STATUS.ARCHIVED;
+
+// Lo opcional que quedó cargado, para que se vea qué va a mostrar la ficha
+const filledDetails = [
+  product.summary && 'Para qué sirve',
+  product.usageSteps.length > 0 && 'Cómo se usa',
+  product.benefits.length > 0 && 'Beneficios',
+  product.keyIngredients && 'Ingredientes',
+  product.skinTypes.length > 0 && 'Tipo de piel',
+  product.usageTime && USAGE_TIME_LABEL[product.usageTime],
+  product.warnings && 'Precauciones',
+  product.line && `Línea ${product.line.name}`,
+].filter((item): item is string => Boolean(item));
+---
+
+<WizardLayout
+  step={WIZARD_STEP.REVIEW}
+  productId={product.id}
+  title={isPublished ? 'Así se ve en la tienda' : 'Revisá y publicá'}
+  lead={isPublished ? 'Ya está publicado. Desde acá podés corregir algo o sacarlo de la tienda.' : 'Mirá que esté todo bien. Cuando lo publiques, tus clientas lo van a poder ver y pedir.'}
+>
+  {formError && <p role="alert" class="mt-6 rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{formError}</p>}
+
+  <div class="mt-8 grid gap-6 sm:grid-cols-[10rem_1fr]">
+    <div class="aspect-square overflow-hidden rounded-3xl bg-blush">
+      {
+        photo ? (
+          <img src={photo.url} alt={photo.alt} width="320" height="320" class="size-full object-cover" />
+        ) : (
+          <span class="grid size-full place-items-center text-rose-deep"><Icon name="image" class="size-8" /></span>
+        )
+      }
+    </div>
+    <div class="min-w-0">
+      <p class="text-sm text-muted">{product.brand.name} · {product.category.name}</p>
+      <p class="mt-1 font-display text-2xl font-medium tracking-tight">{product.name}</p>
+      <p class="mt-3">
+        {product.priceArs > 0 ? formatArs(product.priceArs) : 'Sin precio'} ·
+        {product.stock === 0 ? ' agotado' : ` ${product.stock} ${product.stock === 1 ? 'unidad' : 'unidades'}`}
+      </p>
+      <p class="mt-3 text-sm text-muted">
+        {filledDetails.length > 0 ? `En la ficha: ${filledDetails.join(', ')}.` : 'Todavía no cargaste detalles. La ficha va a mostrar solo el nombre, la foto y el precio.'}
+      </p>
+    </div>
+  </div>
+
+  <ul class="mt-8 divide-y divide-edge border-y border-edge text-sm" aria-label="Corregir algo">
+    {
+      [
+        { step: WIZARD_STEP.BASICS, label: 'Nombre, marca y tipo' },
+        { step: WIZARD_STEP.PHOTO, label: 'Fotos' },
+        { step: WIZARD_STEP.PRICE, label: 'Precio y unidades' },
+        { step: WIZARD_STEP.DETAILS, label: 'Detalles' },
+      ].map((entry) => (
+        <li>
+          <a href={editLink(entry.step)} class="flex min-h-12 items-center justify-between gap-4 hover:text-rose-deep">
+            <span>{entry.label}</span>
+            <span class="inline-flex items-center gap-2 text-muted"><Icon name="pencil-simple" class="size-4" /> Cambiar</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="mt-8 grid gap-4">
+    {
+      blockers.length > 0 && !isArchived && (
+        <div class="rounded-3xl bg-blush px-5 py-4" role="status">
+          <p class="font-medium text-rose-deep">Para publicarlo todavía falta:</p>
+          <ul class="mt-2 grid gap-1">
+            {blockers.map((blocker) => (
+              <li>
+                <a href={editLink(BLOCKER_STEP[blocker])} class="inline-flex min-h-10 items-center gap-2 underline underline-offset-4">
+                  {PUBLISH_BLOCKER_MESSAGE[blocker]} <Icon name="arrow-right" class="size-4" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    {
+      isArchived ? (
+        <form method="post">
+          <input type="hidden" name="intent" value={REVIEW_INTENT.RESTORE} />
+          <button type="submit" class="btn btn-solid w-full sm:w-auto">Recuperar como borrador</button>
+        </form>
+      ) : isPublished ? (
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <a href={`/productos/${product.slug}`} class="btn btn-solid w-full sm:w-auto" target="_blank" rel="noopener">
+            Ver en la tienda <Icon name="arrow-up-right" class="size-4" />
+          </a>
+          <form method="post">
+            <input type="hidden" name="intent" value={REVIEW_INTENT.HIDE} />
+            <button type="submit" class="btn btn-ghost w-full sm:w-auto"><Icon name="eye-slash" /> Ocultar de la tienda</button>
+          </form>
+        </div>
+      ) : (
+        <form method="post">
+          <input type="hidden" name="intent" value={REVIEW_INTENT.PUBLISH} />
+          <button type="submit" class="btn btn-solid w-full sm:w-auto" disabled={blockers.length > 0}><Icon name="storefront" /> Publicar en la tienda</button>
+        </form>
+      )
+    }
+  </div>
+
+  {
+    !isArchived && (
+      <details class="mt-10 rounded-3xl border border-edge px-5 py-4">
+        <summary class="min-h-10 cursor-pointer text-sm text-muted">Eliminar este producto</summary>
+        <form method="post" class="mt-3 grid gap-3">
+          <p class="text-sm">No se borra del todo: se saca de la tienda y lo podés recuperar después desde «Ocultar o mostrar un producto».</p>
+          <input type="hidden" name="intent" value={REVIEW_INTENT.ARCHIVE} />
+          <button type="submit" class="btn btn-ghost w-full text-rose-deep sm:w-auto sm:justify-self-start"><Icon name="trash" /> Sí, eliminar</button>
+        </form>
+      </details>
+    )
+  }
+</WizardLayout>

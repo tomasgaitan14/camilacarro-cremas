@@ -1,0 +1,16 @@
+---
+import { ADMIN_NOTICE_PARAM, noticeFor } from '../../lib/admin-notices.ts';
+import Icon from '../Icon.astro';
+
+// Solo se muestra el texto de un código conocido: lo que venga en la dirección nunca se escribe tal cual
+const message = noticeFor(Astro.url.searchParams.get(ADMIN_NOTICE_PARAM));
+---
+
+{
+  message && (
+    <p role="status" class="mt-6 flex items-center gap-3 rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">
+      <Icon name="check" />
+      {message}
+    </p>
+  )
+}

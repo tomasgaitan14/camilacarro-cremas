@@ -1,10 +1,82 @@
 ---
+import AdminNotice from '../../components/admin/AdminNotice.astro';
+import Icon from '../../components/Icon.astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import { ADMIN_ROUTES, resumeStep, wizardPath } from '../../lib/admin-wizard.ts';
+import { listProductsForAdmin } from '../../lib/catalog.ts';
+import { PRODUCT_STATUS } from '../../lib/constants.ts';
+
+const products = await listProductsForAdmin(Astro.locals.supabase);
+const published = products.filter((product) => product.status === PRODUCT_STATUS.PUBLISHED).length;
+const drafts = products.filter((product) => product.status === PRODUCT_STATUS.DRAFT);
+// borradores a medio cargar: los que todavía no tienen foto o precio (los demás están solo ocultos)
+const unfinished = drafts.filter((product) => resumeStep(product) !== 'revisar');
 ---
 
 <AdminLayout title="Inicio">
-  <div class="tile mt-6 p-8 sm:p-12">
-    <h1 class="text-3xl font-medium tracking-tighter sm:text-4xl">¡Hola!</h1>
-    <p class="mt-3 max-w-[48ch] text-muted">Entraste bien a tu panel. Muy pronto vas a poder agregar productos y cambiar precios y stock desde acá.</p>
-  </div>
+  <section class="mt-6">
+    <h1 class="text-3xl font-medium tracking-tighter sm:text-4xl">¿Qué querés hacer hoy?</h1>
+    <p class="mt-3 text-muted">
+      {published === 0 ? 'Todavía no hay productos en la tienda.' : `Hay ${published} ${published === 1 ? 'producto' : 'productos'} en la tienda.`}
+    </p>
+    <AdminNotice />
+  </section>
+
+  <!-- Una acción principal grande y dos secundarias: se elige sin pensar -->
+  <section class="mt-8 grid gap-5 md:grid-cols-[1.4fr_1fr]" aria-label="Acciones">
+    <a
+      href={ADMIN_ROUTES.NEW_PRODUCT}
+      class="tile group flex min-h-56 flex-col justify-between gap-10 bg-blush p-8 transition-transform duration-300 hover:-translate-y-0.5 md:row-span-2 md:min-h-96 sm:p-10"
+    >
+      <span class="grid size-14 place-items-center rounded-full bg-rose text-white"><Icon name="plus" class="size-7" /></span>
+      <span>
+        <span class="block font-display text-3xl font-medium tracking-tighter sm:text-4xl">Agregar un producto</span>
+        <span class="mt-2 block max-w-[34ch] text-muted">Te vamos guiando de a una pregunta por vez. Solo necesitás una foto y el precio.</span>
+      </span>
+    </a>
+    <a
+      href={ADMIN_ROUTES.STOCK}
+      class="tile flex items-center gap-5 p-6 transition-transform duration-300 hover:-translate-y-0.5 sm:p-8"
+    >
+      <span class="grid size-12 shrink-0 place-items-center rounded-full bg-canvas text-rose-deep"><Icon name="tag" class="size-6" /></span>
+      <span>
+        <span class="block font-display text-xl font-medium tracking-tight">Cambiar precio o stock</span>
+        <span class="mt-1 block text-sm text-muted">Para cuando vendiste algo o subió un precio.</span>
+      </span>
+    </a>
+    <a
+      href={ADMIN_ROUTES.VISIBILITY}
+      class="tile flex items-center gap-5 p-6 transition-transform duration-300 hover:-translate-y-0.5 sm:p-8"
+    >
+      <span class="grid size-12 shrink-0 place-items-center rounded-full bg-canvas text-rose-deep"><Icon name="eye-slash" class="size-6" /></span>
+      <span>
+        <span class="block font-display text-xl font-medium tracking-tight">Ocultar o mostrar un producto</span>
+        <span class="mt-1 block text-sm text-muted">Sacalo de la tienda sin perderlo, o volvé a mostrarlo.</span>
+      </span>
+    </a>
+  </section>
+
+  {
+    unfinished.length > 0 && (
+      <section class="mt-12" aria-labelledby="pendientes">
+        <h2 id="pendientes" class="text-2xl font-medium tracking-tight">Productos a medio cargar</h2>
+        <p class="mt-2 text-muted">Seguí donde lo dejaste.</p>
+        <ul class="mt-4 divide-y divide-edge border-y border-edge">
+          {unfinished.map((product) => (
+            <li>
+              <a
+                href={wizardPath(product.id, resumeStep(product))}
+                class="flex min-h-14 items-center justify-between gap-4 py-3 hover:text-rose-deep"
+              >
+                <span class="min-w-0 truncate font-medium">{product.name}</span>
+                <span class="inline-flex shrink-0 items-center gap-2 text-sm text-muted">
+                  Seguir <Icon name="arrow-right" class="size-4" />
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
 </AdminLayout>

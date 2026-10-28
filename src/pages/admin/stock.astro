@@ -1,0 +1,141 @@
+---
+import AdminNotice from '../../components/admin/AdminNotice.astro';
+import ProductRow from '../../components/admin/ProductRow.astro';
+import Icon from '../../components/Icon.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { ADMIN_PATHS } from '../../lib/admin-auth.ts';
+import { withNotice } from '../../lib/admin-notices.ts';
+import { describeAdminFailure } from '../../lib/admin-page.ts';
+import { parsePriceStockForm, text } from '../../lib/admin-product-input.ts';
+import { adjustStock, updatePriceStock } from '../../lib/admin-products.ts';
+import { ADMIN_ROUTES } from '../../lib/admin-wizard.ts';
+import { filterProducts } from '../../lib/catalog-filter.ts';
+import { listProductsForAdmin } from '../../lib/catalog.ts';
+import { MAX_FILTER_TEXT_LENGTH, PRODUCT_STATUS, STOCK_STEP } from '../../lib/constants.ts';
+
+const STOCK_INTENT = { SAVE: 'save', LESS: 'less', MORE: 'more' } as const;
+
+const supabase = Astro.locals.supabase;
+const search = (Astro.url.searchParams.get('q') ?? '').slice(0, MAX_FILTER_TEXT_LENGTH);
+const here = `${ADMIN_ROUTES.STOCK}${search ? `?q=${encodeURIComponent(search)}` : ''}`;
+
+// errores y valores por producto: solo la fila que falló los muestra
+let rowErrors: Record<string, Record<string, string>> = {};
+let rowValues: Record<string, Record<string, string>> = {};
+let pageError = '';
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const productId = text(form, 'productId');
+  const intent = text(form, 'intent');
+  try {
+    if (intent === STOCK_INTENT.LESS || intent === STOCK_INTENT.MORE) {
+      await adjustStock(supabase, productId, intent === STOCK_INTENT.MORE ? STOCK_STEP : -STOCK_STEP);
+      return Astro.redirect(withNotice(here, 'unidades', `p-${productId}`), 303);
+    }
+    if (intent === STOCK_INTENT.SAVE) {
+      const parsed = parsePriceStockForm(form);
+      if (!parsed.ok) {
+        rowErrors = { [productId]: parsed.errors };
+        rowValues = { [productId]: parsed.values };
+      } else {
+        await updatePriceStock(supabase, productId, parsed.value);
+        return Astro.redirect(withNotice(here, 'precio', `p-${productId}`), 303);
+      }
+    }
+  } catch (error) {
+    const message = describeAdminFailure(error);
+    if (!message) throw error;
+    pageError = message;
+  }
+}
+
+const all = await listProductsForAdmin(supabase);
+const products = filterProducts(all, { search }).filter((product) => product.status !== PRODUCT_STATUS.ARCHIVED);
+---
+
+<AdminLayout title="Precio y stock">
+  <a href={ADMIN_PATHS.HOME} class="mt-4 inline-flex min-h-11 items-center gap-2 text-sm text-muted hover:text-ink">
+    <Icon name="arrow-left" class="size-4" /> Volver al inicio
+  </a>
+  <h1 class="mt-2 text-3xl font-medium tracking-tighter sm:text-4xl">Precio y unidades</h1>
+  <p class="mt-3 max-w-[56ch] text-muted">Cambiá el precio o las unidades de cada producto. Los botones − y + suman o restan de a uno.</p>
+  <AdminNotice />
+  {pageError && <p role="alert" class="mt-6 rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{pageError}</p>}
+
+  <form method="get" role="search" class="mt-6 flex max-w-md gap-2">
+    <label for="q" class="sr-only">Buscar un producto</label>
+    <input id="q" name="q" type="search" value={search} placeholder="Buscar un producto" maxlength={MAX_FILTER_TEXT_LENGTH} class="field w-full text-base" />
+    <button type="submit" class="btn btn-ghost">Buscar</button>
+  </form>
+
+  {
+    products.length === 0 ? (
+      <p class="tile mt-8 p-8 text-muted">
+        {search ? 'No encontramos ningún producto con ese nombre.' : 'Todavía no cargaste productos. Empezá desde el inicio con «Agregar un producto».'}
+      </p>
+    ) : (
+      <ul class="tile mt-8 px-6 py-2 sm:px-8">
+        {products.map((product) => {
+          const errors = rowErrors[product.id] ?? {};
+          const values = rowValues[product.id] ?? { price: product.priceArs > 0 ? String(product.priceArs) : '', stock: String(product.stock) };
+          return (
+            <ProductRow product={product}>
+              <div class="grid gap-3">
+                <form id={`less-${product.id}`} method="post" action={here}>
+                  <input type="hidden" name="productId" value={product.id} />
+                  <input type="hidden" name="intent" value={STOCK_INTENT.LESS} />
+                </form>
+                <form id={`more-${product.id}`} method="post" action={here}>
+                  <input type="hidden" name="productId" value={product.id} />
+                  <input type="hidden" name="intent" value={STOCK_INTENT.MORE} />
+                </form>
+                <form method="post" action={here} class="grid gap-3 sm:grid-cols-[auto_8rem_auto] sm:items-end" novalidate>
+                  <input type="hidden" name="productId" value={product.id} />
+                  <input type="hidden" name="intent" value={STOCK_INTENT.SAVE} />
+                  <div class="grid gap-1">
+                    <label for={`stock-${product.id}`} class="text-xs text-muted">Unidades</label>
+                    <div class="flex items-center gap-1">
+                      <button type="submit" form={`less-${product.id}`} class="btn btn-ghost size-11 !min-h-11 !p-0" aria-label={`Una unidad menos de ${product.name}`}>
+                        <Icon name="minus" />
+                      </button>
+                      <input
+                        id={`stock-${product.id}`}
+                        name="stock"
+                        type="text"
+                        inputmode="numeric"
+                        value={values.stock}
+                        class="field w-16 px-2 text-center text-base"
+                        aria-invalid={errors.stock ? 'true' : undefined}
+                        aria-describedby={errors.stock ? `stock-${product.id}-error` : undefined}
+                      />
+                      <button type="submit" form={`more-${product.id}`} class="btn btn-ghost size-11 !min-h-11 !p-0" aria-label={`Una unidad más de ${product.name}`}>
+                        <Icon name="plus" />
+                      </button>
+                    </div>
+                  </div>
+                  <div class="grid gap-1">
+                    <label for={`price-${product.id}`} class="text-xs text-muted">Precio en pesos</label>
+                    <input
+                      id={`price-${product.id}`}
+                      name="price"
+                      type="text"
+                      inputmode="numeric"
+                      value={values.price}
+                      class="field w-full text-base"
+                      aria-invalid={errors.price ? 'true' : undefined}
+                      aria-describedby={errors.price ? `price-${product.id}-error` : undefined}
+                    />
+                  </div>
+                  <button type="submit" class="btn btn-solid btn-sm">Guardar</button>
+                </form>
+                {errors.stock && <p id={`stock-${product.id}-error`} class="text-sm font-medium text-rose-deep">{errors.stock}</p>}
+                {errors.price && <p id={`price-${product.id}-error`} class="text-sm font-medium text-rose-deep">{errors.price}</p>}
+              </div>
+            </ProductRow>
+          );
+        })}
+      </ul>
+    )
+  }
+</AdminLayout>
