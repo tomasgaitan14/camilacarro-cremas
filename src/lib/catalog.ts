@@ -156,6 +156,32 @@ export async function getProductBySlug(client: SupabaseClient, slug: string): Pr
   return data ? toProduct(client, data as unknown as ProductRow) : null;
 }
 
+// Para el panel: todos los estados (borradores, ocultos y archivados). La RLS solo se los muestra a un admin;
+// con otro cliente devuelve únicamente los publicados.
+export async function listProductsForAdmin(client: SupabaseClient): Promise<Product[]> {
+  const { data, error } = await client.from('products').select(productSelect(false)).order('name');
+  if (error) throw new CatalogError('No se pudieron leer los productos del panel', { cause: error });
+  return (data as unknown as ProductRow[]).map((row) => toProduct(client, row));
+}
+
+export async function getProductForAdmin(client: SupabaseClient, id: string): Promise<Product | null> {
+  const { data, error } = await client.from('products').select(productSelect(false)).eq('id', id).maybeSingle();
+  if (error) throw new CatalogError(`No se pudo leer el producto "${id}"`, { cause: error });
+  return data ? toProduct(client, data as unknown as ProductRow) : null;
+}
+
+export async function listLines(client: SupabaseClient): Promise<ProductLine[]> {
+  const { data, error } = await client.from('product_lines').select('id, slug, name, description, brand_id').order('name');
+  if (error) throw new CatalogError('No se pudieron leer las líneas', { cause: error });
+  return (data as LineRow[]).map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    brandId: row.brand_id,
+  }));
+}
+
 export async function listBrands(client: SupabaseClient): Promise<Brand[]> {
   const { data, error } = await client.from('brands').select('id, slug, name').order('name');
   if (error) throw new CatalogError('No se pudieron leer las marcas', { cause: error });

@@ -41,3 +41,36 @@ export class CatalogError extends Error {
     this.name = 'CatalogError';
   }
 }
+
+// Falla al leer o escribir datos desde el panel de administración
+export class AdminDataError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'AdminDataError';
+  }
+}
+
+export type PublishBlocker = 'PHOTO' | 'PRICE';
+
+// El producto todavía no tiene todo lo necesario para mostrarse en la tienda
+export class PublishBlockedError extends Error {
+  readonly blockers: PublishBlocker[];
+
+  constructor(blockers: PublishBlocker[]) {
+    super(`No se puede publicar: falta ${blockers.join(', ')}`);
+    this.name = 'PublishBlockedError';
+    this.blockers = blockers;
+  }
+}
+
+export type ImageErrorCode = 'NOT_AN_IMAGE' | 'TOO_BIG' | 'TOO_SMALL' | 'TOO_MANY';
+
+export class ImageError extends Error {
+  readonly code: ImageErrorCode;
+
+  constructor(code: ImageErrorCode, message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'ImageError';
+    this.code = code;
+  }
+}
