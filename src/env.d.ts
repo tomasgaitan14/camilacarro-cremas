@@ -11,3 +11,11 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+declare namespace App {
+  // Los completa el middleware solo en las páginas del panel y solo cuando entró un admin
+  interface Locals {
+    supabase: import('@supabase/supabase-js').SupabaseClient;
+    adminUser: import('@supabase/supabase-js').User;
+  }
+}
