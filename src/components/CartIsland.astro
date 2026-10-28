@@ -1,0 +1,130 @@
+---
+// Marcado según docs/cart-dom-contract.md. La isla inferior aparece cuando hay productos y se expande en el panel.
+import Icon from './Icon.astro';
+
+const option =
+  'block cursor-pointer rounded-full border border-edge bg-surface px-4 py-2.5 text-center text-[0.95rem] transition-[background-color,color,border-color,transform] duration-300 active:scale-[0.98] peer-checked:border-rose peer-checked:bg-rose peer-checked:text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-rose';
+---
+
+<p data-cart-toast hidden role="status" class="glass pointer-events-none fixed bottom-24 left-1/2 z-50 w-[min(26rem,calc(100%-2rem))] -translate-x-1/2 rounded-2xl px-5 py-3 text-center text-sm text-rose-deep"></p>
+
+<div class="island">
+  <button type="button" data-cart-open class="btn glass gap-3 py-2.5 pl-4 pr-5 text-ink" aria-label="Ver mi pedido">
+    <span class="relative">
+      <Icon name="bag" class="size-5" />
+    </span>
+    <span class="font-medium tabular-nums"><span data-cart-count data-empty="true">0</span> en tu pedido</span>
+    <span class="hidden h-4 w-px bg-edge sm:block"></span>
+    <span class="hidden font-medium tabular-nums sm:inline" data-cart-total></span>
+  </button>
+</div>
+
+<div data-cart-root>
+  <div data-cart-overlay></div>
+  <aside data-cart-panel role="dialog" aria-modal="true" aria-labelledby="cart-title" class="glass">
+    <div class="flex items-center justify-between px-6 pb-3 pt-6">
+      <h2 id="cart-title" class="text-2xl font-medium">Tu pedido</h2>
+      <button type="button" data-cart-close class="btn btn-ghost btn-sm size-10 px-0" aria-label="Cerrar">
+        <Icon name="x" />
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 pb-2">
+      <div data-cart-when="empty" class="py-8">
+        <p class="text-xl font-medium">Todavía no hay nada en tu pedido.</p>
+        <p class="mt-1 text-muted">Sumá productos y lo enviás armado por WhatsApp.</p>
+        <a href="/productos" class="btn btn-ghost mt-5">Ver los productos</a>
+      </div>
+
+      <div data-cart-when="loading" hidden class="grid gap-4 py-4" aria-busy="true">
+        {
+          [0, 1].map(() => (
+            <div class="grid grid-cols-[4.5rem_1fr] gap-4">
+              <div class="shimmer aspect-[4/5] rounded-2xl" />
+              <div class="grid content-center gap-2.5">
+                <div class="shimmer h-3.5 w-1/3 rounded-full" />
+                <div class="shimmer h-5 w-3/4 rounded-full" />
+              </div>
+            </div>
+          ))
+        }
+        <p class="sr-only">Cargando tu pedido</p>
+      </div>
+
+      <div data-cart-when="error" hidden class="py-8">
+        <p class="text-xl font-medium">No pudimos cargar tu pedido.</p>
+        <p class="mt-1 text-muted">Revisá tu conexión y volvé a intentar. Tus productos siguen guardados.</p>
+        <button type="button" data-cart-retry class="btn btn-ghost mt-5">Reintentar</button>
+      </div>
+
+      <div data-cart-when="ready" hidden>
+        <ul data-cart-items class="grid gap-3"></ul>
+
+        <fieldset class="mt-6">
+          <legend class="mb-2.5 text-sm font-medium text-muted">Entrega</legend>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label>
+              <input type="radio" name="cart-delivery" value="pickup" class="peer sr-only" checked />
+              <span class={option}>Retiro</span>
+            </label>
+            <label>
+              <input type="radio" name="cart-delivery" value="delivery" class="peer sr-only" />
+              <span class={option}>Envío</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="mt-5">
+          <legend class="mb-2.5 text-sm font-medium text-muted">Pago</legend>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label>
+              <input type="radio" name="cart-payment" value="transfer" class="peer sr-only" checked />
+              <span class={option}>Transferencia</span>
+            </label>
+            <label>
+              <input type="radio" name="cart-payment" value="cash" class="peer sr-only" />
+              <span class={option}>Efectivo</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <button type="button" data-cart-clear class="mt-5 text-sm text-muted underline decoration-edge underline-offset-4 hover:text-rose-deep">
+          Vaciar pedido
+        </button>
+      </div>
+    </div>
+
+    <div class="px-6 pb-6 pt-4">
+      <div class="flex items-baseline justify-between" data-cart-when="ready" hidden>
+        <span class="text-muted">Total</span>
+        <span class="font-display text-2xl font-medium tabular-nums" data-cart-total></span>
+      </div>
+      <p data-cart-error hidden role="alert" class="mt-3 rounded-2xl bg-blush px-4 py-3 text-sm text-rose-deep"></p>
+      <a href="#" data-cart-checkout target="_blank" rel="noopener" aria-disabled="true" class="btn btn-solid mt-4 w-full gap-2.5">
+        <Icon name="whatsapp" class="size-5" />
+        Enviar pedido por WhatsApp
+      </a>
+      <p class="mt-3 text-center text-sm text-muted">Camila confirma la disponibilidad y coordina la entrega.</p>
+      <div data-cart-status aria-live="polite" class="sr-only"></div>
+    </div>
+
+    <template data-cart-item-template>
+      <li data-cart-item class="grid grid-cols-[4.5rem_1fr] gap-4 rounded-[1.5rem] border border-edge/70 bg-surface p-3">
+        <img data-slot="image" alt="" width="72" height="90" class="aspect-[4/5] w-full rounded-2xl bg-blush object-cover" />
+        <div class="flex min-w-0 flex-col">
+          <p data-slot="brand" class="text-xs text-muted"></p>
+          <p data-slot="name" class="font-display text-base font-medium leading-snug"></p>
+          <div class="mt-auto flex items-center justify-between gap-2 pt-2">
+            <div class="inline-flex items-center rounded-full border border-edge bg-canvas">
+              <button type="button" data-cart-dec aria-label="Quitar una unidad" class="grid size-11 place-items-center rounded-full transition-colors hover:bg-blush active:scale-95">−</button>
+              <span data-slot="quantity" class="w-6 text-center text-sm font-medium tabular-nums"></span>
+              <button type="button" data-cart-inc aria-label="Sumar una unidad" class="grid size-11 place-items-center rounded-full transition-colors hover:bg-blush active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent">+</button>
+            </div>
+            <span data-slot="subtotal" class="text-sm font-medium tabular-nums"></span>
+          </div>
+        </div>
+        <button type="button" data-cart-remove class="col-span-2 -mt-1 inline-flex min-h-10 items-center justify-self-end px-2 text-xs text-muted underline decoration-edge underline-offset-4 hover:text-rose-deep">Quitar</button>
+      </li>
+    </template>
+  </aside>
+</div>

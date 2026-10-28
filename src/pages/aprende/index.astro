@@ -1,0 +1,59 @@
+---
+import { getCollection } from 'astro:content';
+import ConsultCta from '../../components/ConsultCta.astro';
+import GuideCard from '../../components/GuideCard.astro';
+import Layout from '../../layouts/Layout.astro';
+import { getCatalog } from '../../lib/catalog-cache.ts';
+import { CatalogError } from '../../lib/errors.ts';
+import { resolveGuideProducts, sortGuides } from '../../lib/guides.ts';
+import type { Product } from '../../lib/types.ts';
+
+const guides = sortGuides(await getCollection('guides'));
+const hasDraft = guides.some((guide) => guide.data.status === 'borrador');
+
+// Las fotos de las guías salen del catálogo; si no carga, las guías se muestran igual, sin foto
+let products: Product[] = [];
+try {
+  products = (await getCatalog()).products;
+} catch (error) {
+  if (!(error instanceof CatalogError)) throw error;
+}
+
+const cards = guides.map((guide) => ({ guide, cover: resolveGuideProducts(guide.data, products).cover }));
+const [lead, ...rest] = cards;
+---
+
+<Layout title="Aprendé con Camila" description="Guías simples para entender tu rutina de cuidado de la piel: qué hace cada paso, en qué orden usarlo y cómo sumar un producto nuevo.">
+  <div class="mx-auto w-full max-w-[1280px] px-5 pb-8 pt-6 sm:px-8">
+    <h1 class="reveal max-w-[18ch] text-4xl font-medium leading-[1.04] tracking-tighter sm:text-5xl">Aprendé con Camila</h1>
+    <p class="reveal mt-4 max-w-[56ch] text-lg text-muted" style="--i:1">
+      Guías cortas para entender qué hace cada producto, cómo usarlo y en qué orden. No hace falta saber de skincare para empezar.
+    </p>
+    {
+      hasDraft && (
+        <p class="reveal mt-6 max-w-[62ch] rounded-2xl bg-blush/70 px-5 py-3 text-sm text-rose-deep" style="--i:2">
+          Las guías marcadas como borrador son información general que Camila todavía tiene que revisar.
+        </p>
+      )
+    }
+
+    {
+      lead && (
+        <div class="mt-12 grid gap-x-8 gap-y-10 lg:grid-cols-12">
+          <div class="lg:col-span-7">
+            <GuideCard slug={lead.guide.id} {...lead.guide.data} cover={lead.cover} size="large" />
+          </div>
+          <div class="grid content-start gap-8 lg:col-span-5">
+            {rest.map(({ guide, cover }, index) => (
+              <GuideCard slug={guide.id} {...guide.data} cover={cover} index={index + 1} />
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    <div class="mt-24">
+      <ConsultCta />
+    </div>
+  </div>
+</Layout>

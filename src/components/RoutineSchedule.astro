@@ -1,0 +1,37 @@
+---
+import { ROUTINE_SCHEDULE } from '../lib/site.ts';
+import Icon from './Icon.astro';
+
+const columns = [
+  { key: 'morning', title: 'Rutina de mañana', icon: 'sun', steps: ROUTINE_SCHEDULE.morning, offset: '' },
+  { key: 'night', title: 'Rutina de noche', icon: 'moon', steps: ROUTINE_SCHEDULE.night, offset: 'lg:mt-12' },
+] as const;
+---
+
+<div class="grid gap-5 lg:grid-cols-[1.1fr_1fr]">
+  {
+    columns.map((column, columnIndex) => (
+      <section class:list={['tile reveal p-8 sm:p-10', column.offset]} style={`--i:${columnIndex}`} aria-labelledby={`rutina-${column.key}`}>
+        <div class="flex items-center gap-3">
+          <span class="grid size-11 place-items-center rounded-full bg-blush text-rose-deep"><Icon name={column.icon} class="size-6" /></span>
+          <h3 id={`rutina-${column.key}`} class="text-2xl font-medium">{column.title}</h3>
+        </div>
+        <ol class="mt-8 grid gap-1">
+          {column.steps.map((step, index) => (
+            <li class="relative grid grid-cols-[2.25rem_1fr] gap-4 pb-6 last:pb-0">
+              {index < column.steps.length - 1 && <span class="absolute bottom-0 left-[1.0625rem] top-9 w-px bg-edge" aria-hidden="true" />}
+              <span class="relative grid size-[2.25rem] place-items-center rounded-full bg-rose text-sm font-medium text-white">{index + 1}</span>
+              <div class="pt-1">
+                <p class="font-display text-lg font-medium leading-tight">{step.label}</p>
+                {step.note && <p class="text-sm text-muted">{step.note}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))
+  }
+</div>
+<p class="mt-5 max-w-[68ch] text-sm text-muted">
+  Es un ejemplo orientativo. Tu rutina depende de los productos que elijas y de tus necesidades; en cada ficha vas a encontrar las indicaciones del fabricante.
+</p>

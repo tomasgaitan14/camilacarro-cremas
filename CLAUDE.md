@@ -34,7 +34,14 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 - Registro público desactivado; el admin se crea con `npm run db:seed` (credenciales en `.env`, `SEED_ADMIN_*`).
 - Dos versiones de diseño en paralelo, cada una en su rama/worktree, sobre la misma base: una con la skill `frontend-design` y otra con `design-taste-frontend`. Tipografía: la que elija cada skill (no la del logo). Tom elige cuál queda.
 - Estilo: clínico y profesional, paleta del logo (rosa empolvado ~`#DB9C9C` + blanco).
-- Producto: marcas y textos de demo genéricos; no se atribuyen beneficios inventados a marcas reales.
+- Productos de demo: salen de la presentación de SKIN1004 (`referencias/`: textos y fotos de la marca, solo para mostrar el sitio a Camila en local). Precios y stock son inventados. **No publicar ni commitear esas fotos** (`supabase/seed-assets/skin1004/` está en `.gitignore`). Antes de publicar: reemplazar por los productos y fotos de Camila y revisar los claims de cada marca (ANMAT).
+
+## Rendimiento y caché
+
+- El servidor guarda el catálogo (productos publicados, marcas y categorías) en memoria 60 s (`src/lib/catalog-cache.ts`, `ttl-cache.ts`): una sola carga para todo el sitio, renovación en segundo plano y, si Supabase falla, sigue sirviendo lo último que cargó. Búsquedas y filtros se resuelven en memoria (`catalog-filter.ts`), sin consultar la base.
+- Un cambio de Camila tarda hasta 60 s en verse. `CATALOG_CACHE_TTL_MS` lo cambia (0 desactiva la caché). El panel de administración tiene que llamar a `invalidateCatalog()` después de guardar para que se vea al instante.
+- `/api/cart-catalog.json` va con `Cache-Control` corto y ETag (304 sin cuerpo). Los errores nunca se cachean.
+- Pendiente según el hosting: compresión y caché de páginas completas en la CDN. Pendiente con el panel: fotos con nombre con hash y un año de caché.
 
 ## Próximos pasos
 

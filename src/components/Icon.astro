@@ -1,0 +1,65 @@
+---
+// Íconos Phosphor (peso light, un solo grosor en todo el sitio), importados como SVG en línea
+import arrowUpRight from '@phosphor-icons/core/assets/light/arrow-up-right-light.svg?raw';
+import arrowRight from '@phosphor-icons/core/assets/light/arrow-right-light.svg?raw';
+import bookOpen from '@phosphor-icons/core/assets/light/book-open-light.svg?raw';
+import bank from '@phosphor-icons/core/assets/light/bank-light.svg?raw';
+import caretDown from '@phosphor-icons/core/assets/light/caret-down-light.svg?raw';
+import check from '@phosphor-icons/core/assets/light/check-light.svg?raw';
+import handCoins from '@phosphor-icons/core/assets/light/hand-coins-light.svg?raw';
+import leaf from '@phosphor-icons/core/assets/light/leaf-light.svg?raw';
+import list from '@phosphor-icons/core/assets/light/list-light.svg?raw';
+import listChecks from '@phosphor-icons/core/assets/light/list-checks-light.svg?raw';
+import moon from '@phosphor-icons/core/assets/light/moon-light.svg?raw';
+import sun from '@phosphor-icons/core/assets/light/sun-light.svg?raw';
+import instagram from '@phosphor-icons/core/assets/light/instagram-logo-light.svg?raw';
+import magnifier from '@phosphor-icons/core/assets/light/magnifying-glass-light.svg?raw';
+import mapPin from '@phosphor-icons/core/assets/light/map-pin-light.svg?raw';
+import minus from '@phosphor-icons/core/assets/light/minus-light.svg?raw';
+import plus from '@phosphor-icons/core/assets/light/plus-light.svg?raw';
+import shoppingBag from '@phosphor-icons/core/assets/light/shopping-bag-light.svg?raw';
+import sparkle from '@phosphor-icons/core/assets/light/sparkle-light.svg?raw';
+import truck from '@phosphor-icons/core/assets/light/truck-light.svg?raw';
+import warning from '@phosphor-icons/core/assets/light/warning-light.svg?raw';
+import whatsapp from '@phosphor-icons/core/assets/light/whatsapp-logo-light.svg?raw';
+import x from '@phosphor-icons/core/assets/light/x-light.svg?raw';
+
+const ICONS = {
+  'arrow-right': arrowRight,
+  'arrow-up-right': arrowUpRight,
+  bank,
+  'book-open': bookOpen,
+  'caret-down': caretDown,
+  check,
+  'hand-coins': handCoins,
+  instagram,
+  leaf,
+  list,
+  'list-checks': listChecks,
+  magnifier,
+  moon,
+  sun,
+  'map-pin': mapPin,
+  minus,
+  plus,
+  bag: shoppingBag,
+  sparkle,
+  truck,
+  warning,
+  whatsapp,
+  x,
+} as const;
+
+export type IconName = keyof typeof ICONS;
+
+interface Props {
+  name: IconName;
+  class?: string;
+}
+
+const { name, class: className = 'size-5' } = Astro.props;
+// decorativo: el texto del botón o enlace que lo contiene ya dice qué hace
+const svg = ICONS[name].replace('<svg', `<svg class="${className} shrink-0" aria-hidden="true" focusable="false"`);
+---
+
+<Fragment set:html={svg} />

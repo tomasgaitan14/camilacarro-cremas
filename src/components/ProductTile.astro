@@ -1,0 +1,69 @@
+---
+import { mainImage } from '../lib/catalog.ts';
+import { USAGE_TIME_LABEL } from '../lib/constants.ts';
+import { formatArs } from '../lib/money.ts';
+import type { Product } from '../lib/types.ts';
+import Icon from './Icon.astro';
+
+interface Props {
+  product: Product;
+  // proporción de la imagen: las grillas la alternan para romper la simetría
+  aspect?: string;
+  // posición para escalonar la entrada
+  index?: number;
+}
+
+const LOW_STOCK_THRESHOLD = 3;
+const { product, aspect = 'aspect-[4/5]', index = 0 } = Astro.props;
+const image = mainImage(product);
+const soldOut = product.stock === 0;
+const lowStock = !soldOut && product.stock <= LOW_STOCK_THRESHOLD;
+---
+
+<article class="reveal group flex h-full flex-col" style={`--i:${index}`}>
+  <a href={`/productos/${product.slug}`} class="tile relative block overflow-hidden">
+    <div class:list={['shimmer relative w-full', aspect]}>
+      {
+        image && (
+          <img
+            src={image.url}
+            alt={image.alt}
+            width="640"
+            height="800"
+            loading="lazy"
+            class="size-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]"
+          />
+        )
+      }
+    </div>
+    {soldOut && <span class="glass absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-medium">Sin stock</span>}
+    {lowStock && <span class="glass absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-medium text-rose-deep">{product.stock === 1 ? 'Última unidad' : `Quedan ${product.stock}`}</span>}
+  </a>
+  <div class="flex flex-1 flex-col px-2 pt-4">
+    <p class="flex flex-wrap items-center gap-1.5 text-sm text-muted">
+      <span>{product.brand.name}</span>
+      <span class="chip !px-2.5 !py-0.5 text-xs">{product.category.name}</span>
+      {product.usageTime && <span class="chip !px-2.5 !py-0.5 text-xs text-rose-deep">{USAGE_TIME_LABEL[product.usageTime]}</span>}
+    </p>
+    <h3 class="mt-1 text-xl font-medium">
+      <a href={`/productos/${product.slug}`} class="hover:text-rose-deep">{product.name}</a>
+    </h3>
+    {product.summary && <p class="mt-1 line-clamp-2 text-sm text-muted">{product.summary}</p>}
+    <p class="mt-1 text-sm text-muted">{product.volume}</p>
+    <a href={`/productos/${product.slug}`} class="mt-1 inline-flex min-h-10 items-center gap-1.5 text-sm text-rose-deep underline decoration-brand underline-offset-4 hover:decoration-current">
+      Ver ficha<Icon name="arrow-right" class="size-3.5" />
+    </a>
+    <div class="mt-auto flex min-h-[3.25rem] flex-wrap items-end justify-between gap-x-3 gap-y-2 pt-3">
+      <span class="font-display text-xl font-medium tabular-nums">{formatArs(product.priceArs)}</span>
+      {
+        !soldOut && (
+          <button type="button" data-add-to-cart data-product-id={product.id} class="btn btn-solid btn-sm">
+            {/* el display va en un span interno: una utilidad de Tailwind en .when-idle le ganaría a la regla que lo oculta */}
+            <span class="when-idle"><span class="inline-flex items-center gap-1.5"><Icon name="plus" class="size-4" />Agregar</span></span>
+            <span class="when-added" aria-hidden="true"><Icon name="check" class="size-4" />Agregado</span>
+          </button>
+        )
+      }
+    </div>
+  </div>
+</article>

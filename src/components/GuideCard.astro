@@ -1,0 +1,42 @@
+---
+import { mainImage } from '../lib/catalog.ts';
+import type { Product } from '../lib/types.ts';
+import Icon from './Icon.astro';
+
+interface Props {
+  slug: string;
+  title: string;
+  summary: string;
+  readingMinutes: number;
+  status: 'borrador' | 'validada';
+  cover: Product | null;
+  // 'large' para la guía destacada; 'row' para listas compactas
+  size?: 'large' | 'row';
+  index?: number;
+}
+
+const { slug, title, summary, readingMinutes, status, cover, size = 'row', index = 0 } = Astro.props;
+const image = cover ? mainImage(cover) : null;
+const isLarge = size === 'large';
+---
+
+<article class:list={['reveal group', isLarge ? 'flex h-full flex-col' : 'grid grid-cols-[6.5rem_1fr] items-center gap-5 sm:grid-cols-[8rem_1fr]']} style={`--i:${index}`}>
+  <a href={`/aprende/${slug}`} class:list={['tile relative block shrink-0 overflow-hidden', !isLarge && '!rounded-[1.75rem]']} tabindex="-1" aria-hidden="true">
+    <div class:list={['shimmer w-full', isLarge ? 'aspect-[5/4]' : 'aspect-square']}>
+      {image && <img src={image.url} alt="" width="640" height="640" loading="lazy" class="size-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04]" />}
+    </div>
+  </a>
+  <div class:list={[isLarge && 'px-2 pt-5']}>
+    <p class="flex flex-wrap items-center gap-2 text-sm text-muted">
+      <span>{readingMinutes} min de lectura</span>
+      {status === 'borrador' && <span class="chip !py-0.5 text-xs">Borrador</span>}
+    </p>
+    <h3 class:list={['mt-1 font-medium', isLarge ? 'text-2xl sm:text-3xl' : 'text-lg leading-snug']}>
+      <a href={`/aprende/${slug}`} class="hover:text-rose-deep">{title}</a>
+    </h3>
+    <p class:list={['mt-2 text-muted', !isLarge && 'hidden sm:block']}>{summary}</p>
+    <a href={`/aprende/${slug}`} class="mt-1 inline-flex min-h-10 items-center gap-1.5 text-rose-deep underline decoration-brand underline-offset-4 hover:decoration-current">
+      Leer guía<Icon name="arrow-right" class="size-4" />
+    </a>
+  </div>
+</article>

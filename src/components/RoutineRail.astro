@@ -1,0 +1,49 @@
+---
+import { mainImage } from '../lib/catalog.ts';
+import { formatArs } from '../lib/money.ts';
+import type { Routine } from '../lib/routine.ts';
+
+interface Props {
+  routine: Routine;
+  currentProductId?: string;
+}
+
+const { routine, currentProductId } = Astro.props;
+---
+
+<ol class="-mx-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-3 pb-4 lg:mx-0 lg:grid lg:grid-cols-[repeat(3,minmax(0,1fr))] lg:overflow-visible lg:px-0 lg:pb-0">
+  {
+    routine.steps.map((step, index) => {
+      const isCurrent = step.products.some((product) => product.id === currentProductId);
+      return (
+        <li class="reveal w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-auto lg:min-w-0" style={`--i:${index}`} aria-current={isCurrent ? 'step' : undefined}>
+          <div class:list={['tile h-full p-5', isCurrent && '!border-rose/60 ring-1 ring-rose/40']}>
+            <p class="flex items-center gap-2 text-sm text-muted">
+              <span class:list={['grid size-6 place-items-center rounded-full text-xs font-medium', isCurrent ? 'bg-rose text-white' : 'bg-blush text-rose-deep']}>{step.step}</span>
+              {step.label}
+            </p>
+            <ul class="mt-4 grid gap-3">
+              {step.products.map((product) => {
+                const image = mainImage(product);
+                const current = product.id === currentProductId;
+                return (
+                  <li>
+                    <a href={`/productos/${product.slug}`} aria-current={current ? 'page' : undefined} class="flex items-center gap-3 rounded-2xl p-1.5 transition-colors hover:bg-blush aria-[current=page]:bg-blush">
+                      <span class="block h-16 w-12 shrink-0 overflow-hidden rounded-xl bg-blush">
+                        {image && <img src={image.url} alt="" width="48" height="64" loading="lazy" class="size-full object-cover" />}
+                      </span>
+                      <span class="min-w-0">
+                        <span class="block truncate font-display text-[0.95rem] font-medium">{product.name}</span>
+                        <span class="text-sm text-muted">{current ? 'Estás acá' : formatArs(product.priceArs)}</span>
+                      </span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </li>
+      );
+    })
+  }
+</ol>

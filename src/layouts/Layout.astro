@@ -1,0 +1,54 @@
+---
+// Se precargan solo las fuentes del subconjunto latino (cubre el español): el navegador las pide junto con el HTML
+// en vez de descubrirlas recién al leer el CSS
+import geistLatin from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
+import outfitLatin from '@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2?url';
+import CartIsland from '../components/CartIsland.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { STORE } from '../lib/site.ts';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Cremas y cuidado de la piel en Gualeguaychú. Cada producto con su modo de uso, sus beneficios y el lugar que ocupa en tu rutina. Pedí por WhatsApp.',
+} = Astro.props;
+const fullTitle = title ? `${title} | ${STORE.name}` : `${STORE.name} · ${STORE.tagline}`;
+---
+
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#fbf8f3" />
+    <link rel="icon" type="image/webp" href={STORE.logoUrl} />
+    <link rel="preload" as="font" type="font/woff2" href={outfitLatin} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={geistLatin} crossorigin />
+  </head>
+  <body>
+    <a
+      href="#contenido"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[80] focus:rounded-full focus:bg-surface focus:px-5 focus:py-3 focus:text-rose"
+    >
+      Ir al contenido
+    </a>
+    <Header />
+    <main id="contenido" class="pt-24">
+      <slot />
+    </main>
+    <Footer />
+    <CartIsland />
+    <script>
+      import { bootCart } from '../lib/cart-boot.ts';
+      bootCart();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,70 @@
+---
+import { NAV_ITEMS, STORE } from '../lib/site.ts';
+import Icon from './Icon.astro';
+
+const path = Astro.url.pathname;
+const items = NAV_ITEMS.map((item) => ({ ...item, active: item.match(path) }));
+const linkClass =
+  'rounded-full px-4 py-2 transition-colors hover:bg-blush aria-[current=page]:bg-blush aria-[current=page]:text-rose-deep';
+---
+
+<header class="fixed inset-x-0 top-3 z-30 px-3 sm:top-4 sm:px-6">
+  <div class="glass mx-auto flex max-w-[1100px] items-center justify-between gap-2 rounded-full py-1.5 pl-2 pr-1.5 sm:pr-2">
+    <a href="/" class="flex min-h-10 items-center gap-2.5 rounded-full pr-2">
+      <img src={STORE.logoUrl} alt="" width="40" height="40" class="size-9 rounded-full sm:size-10" />
+      <span class="whitespace-nowrap font-display text-[1.05rem] font-medium tracking-tight sm:text-lg">{STORE.name}</span>
+    </a>
+
+    <nav aria-label="Principal" class="flex items-center gap-1 text-[0.95rem]">
+      <ul class="hidden items-center gap-0.5 lg:flex">
+        {
+          items.map((item) => (
+            <li>
+              <a href={item.href} aria-current={item.active ? 'page' : undefined} class={linkClass}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+
+      <details data-mobile-menu class="relative lg:hidden">
+        <summary class="btn btn-ghost btn-sm size-10 list-none px-0 [&::-webkit-details-marker]:hidden" aria-label="Menú">
+          <Icon name="list" />
+        </summary>
+        <ul class="absolute right-0 top-[calc(100%+0.75rem)] grid w-60 gap-0.5 rounded-[1.75rem] border border-edge bg-surface p-2 shadow-diffuse">
+          {
+            items.map((item) => (
+              <li>
+                <a href={item.href} aria-current={item.active ? 'page' : undefined} class:list={[linkClass, 'block py-2.5']}>
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </details>
+
+      <button type="button" data-cart-open class="btn btn-solid btn-sm ml-1 gap-2 px-3.5">
+        <Icon name="bag" class="size-[1.15rem]" />
+        <span class="sr-only">Ver mi pedido,</span>
+        <span data-cart-count data-empty="true" class="tabular-nums">0</span>
+        <span class="sr-only">unidades</span>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<script>
+  // El menú móvil es un <details>: se cierra al tocar afuera o con Escape
+  const menu = document.querySelector<HTMLDetailsElement>('[data-mobile-menu]');
+  document.addEventListener('click', (event) => {
+    if (menu?.open && event.target instanceof Node && !menu.contains(event.target)) menu.open = false;
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && menu?.open) {
+      menu.open = false;
+      menu.querySelector('summary')?.focus();
+    }
+  });
+</script>

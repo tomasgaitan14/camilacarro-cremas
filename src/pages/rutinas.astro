@@ -1,0 +1,69 @@
+---
+import ConsultCta from '../components/ConsultCta.astro';
+import Icon from '../components/Icon.astro';
+import RoutineRail from '../components/RoutineRail.astro';
+import RoutineSchedule from '../components/RoutineSchedule.astro';
+import Layout from '../layouts/Layout.astro';
+import { getCatalog } from '../lib/catalog-cache.ts';
+import { CatalogError } from '../lib/errors.ts';
+import { buildRoutines } from '../lib/routine.ts';
+import type { Product } from '../lib/types.ts';
+
+let products: Product[] = [];
+let loadFailed = false;
+try {
+  products = (await getCatalog()).products;
+} catch (error) {
+  if (!(error instanceof CatalogError)) throw error;
+  loadFailed = true;
+  Astro.response.status = 503;
+}
+const routines = buildRoutines(products);
+---
+
+<Layout title="Rutinas" description="Cómo ordenar tu rutina de mañana y de noche, y qué productos del catálogo van en cada paso.">
+  <div class="mx-auto w-full max-w-[1280px] px-5 pb-8 pt-6 sm:px-8">
+    <h1 class="reveal max-w-[16ch] text-4xl font-medium leading-[1.04] tracking-tighter sm:text-5xl">Tu piel, tu rutina</h1>
+    <p class="reveal mt-4 max-w-[56ch] text-lg text-muted" style="--i:1">
+      Una rutina es simplemente un orden: qué usar primero, qué después y en qué momento del día. Acá ves un ejemplo y cómo se organizan los productos del catálogo.
+    </p>
+
+    <section class="mt-16" aria-labelledby="paso-a-paso">
+      <h2 id="paso-a-paso" class="mb-8 text-3xl font-medium tracking-tighter">Tu rutina, paso a paso</h2>
+      <RoutineSchedule />
+    </section>
+
+    <section class="mt-24" aria-labelledby="con-productos">
+      <h2 id="con-productos" class="text-3xl font-medium tracking-tighter">Rutinas con productos del catálogo</h2>
+      <p class="mt-3 max-w-[56ch] text-muted">Así organiza el fabricante cada línea. Entrá a cada ficha para ver cómo se usa el producto.</p>
+      {
+        loadFailed ? (
+          <div class="tile mt-8 p-8">
+            <p class="font-display text-xl font-medium">No pudimos cargar el catálogo.</p>
+            <p class="mt-1 text-muted">Probá de nuevo en unos minutos.</p>
+          </div>
+        ) : routines.length === 0 ? (
+          <div class="tile mt-8 p-8">
+            <p class="font-display text-xl font-medium">Todavía no hay rutinas armadas.</p>
+            <a href="/productos" class="btn btn-ghost mt-5">Ver los productos</a>
+          </div>
+        ) : (
+          routines.map((routine) => (
+            <div class="mt-10">
+              <h3 class="text-2xl font-medium">{routine.line.name}</h3>
+              {routine.line.description && <p class="mt-1 max-w-[56ch] text-muted">{routine.line.description}</p>}
+              <div class="mt-6">
+                <RoutineRail routine={routine} />
+              </div>
+            </div>
+          ))
+        )
+      }
+      <a href="/productos" class="btn btn-solid mt-10 gap-2">Descubrir productos para mi rutina<Icon name="arrow-right" class="size-4" /></a>
+    </section>
+
+    <div class="mt-24">
+      <ConsultCta />
+    </div>
+  </div>
+</Layout>
