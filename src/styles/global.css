@@ -60,41 +60,6 @@
 }
 
 @layer components {
-  /* Texto de las guías (Markdown): lectura cómoda, sin plugin de tipografía */
-  .prose-guide {
-    max-width: 62ch;
-    font-size: 1.0625rem;
-    line-height: 1.75;
-    color: var(--color-ink);
-  }
-  .prose-guide > * + * {
-    margin-top: 1.1rem;
-  }
-  .prose-guide h2 {
-    margin-top: 2.5rem;
-    font-size: 1.5rem;
-    font-weight: 500;
-  }
-  .prose-guide ul,
-  .prose-guide ol {
-    padding-left: 1.4rem;
-  }
-  .prose-guide ul {
-    list-style: disc;
-  }
-  .prose-guide ol {
-    list-style: decimal;
-  }
-  .prose-guide li + li {
-    margin-top: 0.4rem;
-  }
-  .prose-guide li::marker {
-    color: var(--color-rose);
-  }
-  .prose-guide strong {
-    font-weight: 600;
-  }
-
   .tile {
     background: var(--color-surface);
     border: 1px solid rgb(237 227 227 / 0.8);

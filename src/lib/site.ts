@@ -12,7 +12,6 @@ export const NAV_ITEMS = [
   { label: 'Inicio', href: '/', match: (path: string) => path === '/' },
   { label: 'Productos', href: '/productos', match: (path: string) => path.startsWith('/productos') },
   { label: 'Rutinas', href: '/rutinas', match: (path: string) => path.startsWith('/rutinas') },
-  { label: 'Aprendé', href: '/aprende', match: (path: string) => path.startsWith('/aprende') },
   { label: 'Cómo comprar', href: '/#como-comprar', match: () => false },
 ] as const;
 

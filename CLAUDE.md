@@ -32,7 +32,9 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 - Los productos los carga Camila desde un panel `/admin` (formulario + fotos) sobre Supabase. **Falta construirlo (fase 2).**
 - Seguridad: solo la `anon key` en el navegador; la escritura depende de la RLS (`app_metadata.role = 'admin'`, que el usuario no puede editar). La `service_role` solo en `scripts/`.
 - Registro público desactivado; el admin se crea con `npm run db:seed` (credenciales en `.env`, `SEED_ADMIN_*`).
-- Dos versiones de diseño en paralelo, cada una en su rama/worktree, sobre la misma base: una con la skill `frontend-design` y otra con `design-taste-frontend`. Tipografía: la que elija cada skill (no la del logo). Tom elige cuál queda.
+- Diseño elegido: la versión B (skill `design-taste-frontend`, rama `design/design-taste`). La A (`frontend-design`) se descarta.
+- **Camila se pierde si se le piden muchas cosas**: todo lo que cargue ella (panel `/admin`, datos de producto) debe ser mínimo y super guiado. Pocos campos obligatorios (nombre, marca, categoría, precio, foto), el resto opcional y con ayuda; derivar lo que se pueda; los bloques de la web se ocultan solos si falta el dato.
+- Se quitó el apartado de guías «Aprendé con Camila» (menos contenido para mantener). Lo educativo vive en las fichas («Cómo incorporarlo a tu rutina», preguntas frecuentes) y en `/rutinas`.
 - Estilo: clínico y profesional, paleta del logo (rosa empolvado ~`#DB9C9C` + blanco).
 - Productos de demo: salen de la presentación de SKIN1004 (`referencias/`: textos y fotos de la marca, solo para mostrar el sitio a Camila en local). Precios y stock son inventados. **No publicar ni commitear esas fotos** (`supabase/seed-assets/skin1004/` está en `.gitignore`). Antes de publicar: reemplazar por los productos y fotos de Camila y revisar los claims de cada marca (ANMAT).
 
