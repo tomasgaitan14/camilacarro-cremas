@@ -1,0 +1,19 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { ADMIN_PATHS } from '../../lib/admin-auth.ts';
+---
+
+<AdminLayout title="Sin acceso">
+  <div class="tile mx-auto mt-10 max-w-xl p-8 sm:p-12">
+    <h1 class="text-3xl font-medium tracking-tighter sm:text-4xl">Esta cuenta no tiene acceso</h1>
+    <p class="mt-3 max-w-[48ch] text-muted">
+      Entraste con una cuenta de Google que todavía no está habilitada para el panel. Probá con la cuenta de correo que usás para la tienda.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <form method="post" action={ADMIN_PATHS.LOGOUT}>
+        <button type="submit" class="btn btn-solid">Probar con otra cuenta</button>
+      </form>
+      <a href="/" class="btn btn-ghost">Ir a la tienda</a>
+    </div>
+  </div>
+</AdminLayout>

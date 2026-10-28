@@ -1,0 +1,21 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { ADMIN_PATHS, LOGIN_ERROR_MESSAGE, isLoginError, safeNextPath } from '../../lib/admin-auth.ts';
+
+const errorParam = Astro.url.searchParams.get('error');
+const error = isLoginError(errorParam) ? LOGIN_ERROR_MESSAGE[errorParam] : null;
+// se pasa por safeNextPath también acá: el valor vuelve en un campo oculto y se vuelve a validar al usarlo
+const next = safeNextPath(Astro.url.searchParams.get('next'));
+---
+
+<AdminLayout title="Entrar">
+  <div class="tile mx-auto mt-10 max-w-xl p-8 sm:p-12">
+    <h1 class="text-3xl font-medium tracking-tighter sm:text-4xl">Entrá a tu panel</h1>
+    <p class="mt-3 max-w-[44ch] text-muted">Usá tu cuenta de Google, la misma de tu correo. No hace falta recordar ninguna contraseña.</p>
+    {error && <p role="alert" class="mt-6 rounded-2xl bg-blush px-5 py-4 text-sm text-rose-deep">{error}</p>}
+    <form method="post" action={ADMIN_PATHS.GOOGLE} class="mt-8">
+      <input type="hidden" name="next" value={next} />
+      <button type="submit" class="btn btn-solid w-full sm:w-auto">Entrar con Google</button>
+    </form>
+  </div>
+</AdminLayout>
