@@ -21,9 +21,10 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 
 ## Estado actual
 
-- Fase 1 hecha: esquema + RLS + storage, seed de demo, capa de datos (`src/lib/`), carrito puro, link de WhatsApp, 229 tests (mutation-checked).
-- Base compartida del front: `cart-store.ts` (persistencia), `cart-controller.ts` (DOM por atributos `data-*`, contrato en `docs/cart-dom-contract.md`), `/api/cart-catalog.json`, `routine.ts`, `filters.ts`.
-- `src/pages/index.astro` es una página de prueba sin diseño; las dos versiones de diseño la reemplazan.
+- Tienda pública terminada en local (rama `design/design-taste`): portada de 7 secciones, catálogo con filtros y búsqueda, ficha educativa, `/rutinas`, carrito + pedido por WhatsApp, 404/500 con diseño. Probada en móvil (320 a 768 px) y con auditoría de contraste, títulos, nombres de enlaces y teclado. Tests con pruebas de mutación.
+- Accesibilidad: contraste AA en textos y controles, foco visible, diálogo del pedido con fondo inerte y foco devuelto, región en vivo para avisos, `prefers-reduced-motion` respetado.
+- Base: esquema + RLS + storage, seed de demo, capa de datos (`src/lib/`), `cart-store.ts`, `cart-controller.ts` (DOM por atributos `data-*`, contrato en `docs/cart-dom-contract.md`), `/api/cart-catalog.json`, `routine.ts`, `filters.ts`.
+- Sin hacer todavía: panel `/admin` y publicación.
 
 ## Decisiones tomadas
 
@@ -47,8 +48,8 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 
 ## Próximos pasos
 
-1. Dos versiones de diseño de la tienda (home, listado con filtros, ficha educativa, carrito).
-2. Panel `/admin` (login + formulario de producto + subida de fotos).
+1. Mergear `design/design-taste` a `main` y descartar la versión A.
+2. Panel `/admin` (login + formulario de producto + subida de fotos), **simple y guiado** (ver Decisiones).
 3. Cuando se decida publicar: proyecto Supabase en la nube (**verificar el límite de 2 por cuenta**), hosting, cambiar la contraseña del admin, número real de WhatsApp, dominio, SEO/analítica.
 
 ## Archivos clave
