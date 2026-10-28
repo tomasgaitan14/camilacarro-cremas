@@ -19,11 +19,11 @@ from public.brands where slug = 'skin1004';
 
 insert into public.products (
   slug, name, brand_id, category_id, line_id, routine_step, summary, price_ars, volume,
-  key_ingredients, benefits, usage_steps, skin_types, warnings, usage_time, stock, status
+  key_ingredients, benefits, usage_steps, skin_types, warnings, usage_time, faqs, stock, status
 )
 select
   p.slug, p.name, b.id, c.id, l.id, p.routine_step, p.summary, p.price_ars, p.volume,
-  p.key_ingredients, p.benefits, p.usage_steps, p.skin_types, p.warnings, p.usage_time, p.stock, 'published'
+  p.key_ingredients, p.benefits, p.usage_steps, p.skin_types, p.warnings, p.usage_time, p.faqs::jsonb, p.stock, 'published'
 from (values
   (
     'light-cleansing-oil', 'Light Cleansing Oil', 'limpieza', 'madagascar-centella', 1::smallint,
@@ -35,6 +35,7 @@ from (values
     array['La mayoría de los tipos de piel'],
     'Evitar el contacto con los ojos. Suspender el uso ante signos de irritación.',
     null,
+    '[{"q": "¿Sirve si nunca usé un limpiador en aceite?", "a": "Según el fabricante, tiene una textura ligera, similar al agua, adecuada para quienes recién se inician en los limpiadores en aceite."}, {"q": "¿Es comedogénico?", "a": "El fabricante lo indica como no comedogénico: disuelve el sebo y ayuda a evitar la congestión de los poros."}]',
     14
   ),
   (
@@ -47,6 +48,7 @@ from (values
     array['La mayoría de los tipos de piel'],
     'Evitar el contacto con los ojos.',
     null,
+    '[{"q": "¿Qué pH tiene?", "a": "El fabricante indica un pH 5, ligeramente ácido."}]',
     9
   ),
   (
@@ -59,6 +61,7 @@ from (values
     array['Todo tipo de piel', 'Piel con acné'],
     'Hacer una prueba en una zona pequeña antes del primer uso.',
     null,
+    '[{"q": "¿Se puede usar todos los días?", "a": "El fabricante lo describe como un tónico de uso diario."}, {"q": "¿Es apto para piel con acné?", "a": "Según el fabricante, tiene prueba de no comedogenicidad y está pensado para todo tipo de piel, incluso con acné."}]',
     11
   ),
   (
@@ -71,6 +74,7 @@ from (values
     array['Piel sensible'],
     'Hacer una prueba en una zona pequeña antes del primer uso.',
     null,
+    '[]',
     3
   ),
   (
@@ -83,6 +87,7 @@ from (values
     array['Piel sensible'],
     'Evitar el contacto con los ojos.',
     null,
+    '[]',
     0
   ),
   (
@@ -95,6 +100,7 @@ from (values
     array['Todo tipo de piel'],
     'Uso externo. No reemplaza otras medidas de protección solar.',
     'morning',
+    '[{"q": "¿Es un protector físico o químico?", "a": "Es un protector solar físico (mineral), según el fabricante."}, {"q": "¿Deja residuos blancos?", "a": "El fabricante indica una aplicación suave, con mínima formación de residuos blancos."}]',
     17
   ),
   (
@@ -107,6 +113,7 @@ from (values
     array['Piel seca', 'Piel irritada'],
     'Hacer una prueba en una zona pequeña antes del primer uso.',
     null,
+    '[]',
     6
   ),
   (
@@ -119,10 +126,11 @@ from (values
     array['Piel seca', 'Piel sensible'],
     'Evitar el contacto con los ojos.',
     null,
+    '[]',
     8
   )
 ) as p (slug, name, category_slug, line_slug, routine_step, summary, price_ars, volume,
-        key_ingredients, benefits, usage_steps, skin_types, warnings, usage_time, stock)
+        key_ingredients, benefits, usage_steps, skin_types, warnings, usage_time, faqs, stock)
 join public.brands b on b.slug = 'skin1004'
 join public.categories c on c.slug = p.category_slug
 left join public.product_lines l on l.slug = p.line_slug and l.brand_id = b.id;

@@ -1,14 +1,16 @@
 ---
+import ConsultButton from '../../components/ConsultButton.astro';
+import FichaSection from '../../components/FichaSection.astro';
 import Icon from '../../components/Icon.astro';
 import ProductTile from '../../components/ProductTile.astro';
 import RoutineRail from '../../components/RoutineRail.astro';
 import Layout from '../../layouts/Layout.astro';
 import { getCatalog } from '../../lib/catalog-cache.ts';
 import { findProduct } from '../../lib/catalog-filter.ts';
-import { MAX_QTY_PER_ITEM } from '../../lib/constants.ts';
+import { MAX_QTY_PER_ITEM, USAGE_TIME_LABEL } from '../../lib/constants.ts';
 import { CatalogError } from '../../lib/errors.ts';
 import { formatArs } from '../../lib/money.ts';
-import { buildRoutines } from '../../lib/routine.ts';
+import { buildRoutines, findRoutinePosition } from '../../lib/routine.ts';
 import type { Product } from '../../lib/types.ts';
 
 const RELATED_COUNT = 3;
@@ -29,7 +31,8 @@ try {
 if (!product && !loadFailed) Astro.response.status = 404;
 
 const routine = product?.line ? buildRoutines(all).find((candidate) => candidate.line.id === product?.line?.id) : undefined;
-const currentStep = routine?.steps.find((step) => step.products.some((item) => item.id === product?.id));
+const position = routine && product ? findRoutinePosition(routine, product.id) : null;
+const usageLabel = product?.usageTime ? USAGE_TIME_LABEL[product.usageTime] : null;
 const related = product
   ? all
       .filter((item) => item.id !== product?.id)
@@ -112,14 +115,94 @@ const extraImages = product ? product.images.filter((image) => image.id !== prod
                 )}
               </div>
             )}
+            <ConsultButton topic={product.name} variant="ghost" class="mt-3 w-full" />
           </div>
         </div>
 
-        <div class="mt-14 grid gap-5 lg:grid-cols-12">
+        <section class="reveal mt-14 rounded-[2.5rem] bg-blush/70 p-6 sm:p-10 lg:p-12" style="--i:2" aria-labelledby="incorporar">
+          <h2 id="incorporar" class="text-3xl font-medium tracking-tighter sm:text-4xl">Cómo incorporarlo a tu rutina</h2>
+          <div class="mt-8 grid gap-6 lg:grid-cols-12 lg:gap-8">
+            <div class="lg:col-span-6">
+              <dl class="grid gap-6">
+                <div>
+                  <dt class="text-sm text-muted">En qué paso va</dt>
+                  {position && routine ? (
+                    <>
+                      <dd class="mt-1 font-display text-2xl font-medium">Paso {position.step.step}: {position.step.label}</dd>
+                      <dd class="mt-1 max-w-[46ch] text-muted">{position.step.hint ?? `Es parte de la rutina ${routine.line.name}.`}</dd>
+                    </>
+                  ) : (
+                    <dd class="mt-1 max-w-[46ch] text-muted">Este producto no forma parte de una rutina armada por el fabricante. Usalo según sus instrucciones.</dd>
+                  )}
+                </div>
+                <div>
+                  <dt class="text-sm text-muted">Cuándo se usa</dt>
+                  <dd class="mt-1 font-display text-2xl font-medium">{usageLabel ?? 'Según las indicaciones del fabricante'}</dd>
+                </div>
+                {position && (position.previous || position.next) && (
+                  <div>
+                    <dt class="text-sm text-muted">Qué va antes y después</dt>
+                    {[
+                      { when: 'Antes', neighbor: position.previous },
+                      { when: 'Después', neighbor: position.next },
+                    ].map(({ when, neighbor }) =>
+                      neighbor && (
+                        <dd class="mt-1">
+                          <span class="font-medium text-ink">{when}: {neighbor.label}.</span>{' '}
+                          {neighbor.products.map((item, index) => (
+                            <>
+                              {index > 0 && ', '}
+                              <a href={`/productos/${item.slug}`} class="text-rose-deep underline decoration-brand underline-offset-4 hover:decoration-current">{item.name}</a>
+                            </>
+                          ))}
+                        </dd>
+                      ),
+                    )}
+                  </div>
+                )}
+              </dl>
+              {position && routine && (
+                <ol class="mt-8 flex flex-wrap gap-2" aria-label={`Pasos de la rutina ${routine.line.name}`}>
+                  {routine.steps.map((step) => (
+                    <li class:list={['chip', step.step === position.step.step && '!border-rose !bg-rose !text-white']} aria-current={step.step === position.step.step ? 'step' : undefined}>
+                      {step.step}. {step.label}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+
+            <div class="rounded-[2rem] bg-surface p-6 sm:p-8 lg:col-span-6">
+              <h3 class="text-xl font-medium">Cómo se usa</h3>
+              {product.usageSteps.length > 0 ? (
+                <ol class="mt-5 grid gap-2">
+                  {product.usageSteps.map((step, index) => (
+                    <li class="step-cycle flex items-start gap-4 rounded-2xl p-3" style={`--i:${index};--n:${product.usageSteps.length}`}>
+                      <span class="grid size-8 shrink-0 place-items-center rounded-full bg-rose font-display text-sm font-medium text-white">{index + 1}</span>
+                      <span class="pt-1">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p class="mt-4 text-muted">Seguí las indicaciones que trae el envase del fabricante.</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <div class="tile reveal mt-5 divide-y divide-edge overflow-hidden" style="--i:3">
+          {product.summary && (
+            <FichaSection title="Qué es y para qué sirve" open>
+              <p class="max-w-[60ch]">{product.summary}</p>
+              <p class="mt-3 flex flex-wrap gap-2">
+                <span class="chip">{product.category.name}</span>
+                {product.volume && <span class="chip">{product.volume}</span>}
+              </p>
+            </FichaSection>
+          )}
           {product.benefits.length > 0 && (
-            <section class="tile reveal p-8 sm:p-10 lg:col-span-5" style="--i:2" aria-labelledby="beneficios">
-              <h2 id="beneficios" class="text-2xl font-medium">Qué hace por tu piel</h2>
-              <ul class="mt-6 grid gap-4">
+            <FichaSection title="Beneficios que declara el fabricante">
+              <ul class="grid gap-3">
                 {product.benefits.map((benefit) => (
                   <li class="flex items-start gap-3">
                     <span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-blush text-rose-deep"><Icon name="check" class="size-3.5" /></span>
@@ -127,58 +210,46 @@ const extraImages = product ? product.images.filter((image) => image.id !== prod
                   </li>
                 ))}
               </ul>
-            </section>
+            </FichaSection>
           )}
-
-          {product.usageSteps.length > 0 && (
-            <section class="tile reveal p-8 sm:p-10 lg:col-span-7" style="--i:3" aria-labelledby="uso">
-              <h2 id="uso" class="text-2xl font-medium">Cómo se usa</h2>
-              <ol class="mt-6 grid gap-2">
-                {product.usageSteps.map((step, index) => (
-                  <li class="step-cycle flex items-start gap-4 rounded-2xl p-3" style={`--i:${index};--n:${product.usageSteps.length}`}>
-                    <span class="grid size-8 shrink-0 place-items-center rounded-full bg-rose font-display text-sm font-medium text-white">{index + 1}</span>
-                    <span class="pt-1">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-
-          {product.keyIngredients && (
-            <section class="tile reveal p-8 sm:p-10 lg:col-span-7" style="--i:4" aria-labelledby="ingredientes">
-              <h2 id="ingredientes" class="text-2xl font-medium">Ingredientes principales</h2>
-              <p class="mt-4 max-w-[56ch] text-muted">{product.keyIngredients}</p>
-            </section>
-          )}
-
           {product.skinTypes.length > 0 && (
-            <section class="tile reveal p-8 sm:p-10 lg:col-span-5" style="--i:5" aria-labelledby="piel">
-              <h2 id="piel" class="text-2xl font-medium">Para qué piel</h2>
-              <ul class="mt-5 flex flex-wrap gap-2">
+            <FichaSection title="Para qué piel está indicado">
+              <ul class="flex flex-wrap gap-2">
                 {product.skinTypes.map((type) => (
                   <li class="chip">{type}</li>
                 ))}
               </ul>
-            </section>
+              <p class="mt-3 text-sm">Según la información del fabricante.</p>
+            </FichaSection>
           )}
-
+          {product.keyIngredients && (
+            <FichaSection title="Ingredientes principales">
+              <p class="max-w-[60ch]">{product.keyIngredients}</p>
+            </FichaSection>
+          )}
           {product.warnings && (
-            <section class="reveal flex items-start gap-4 rounded-[2rem] bg-blush/70 p-6 sm:p-8 lg:col-span-12" style="--i:6" aria-labelledby="precauciones">
-              <Icon name="warning" class="mt-1 size-6 text-rose-deep" />
-              <div>
-                <h2 id="precauciones" class="text-lg font-medium">Precauciones</h2>
-                <p class="mt-1 max-w-[64ch] text-muted">{product.warnings}</p>
-              </div>
-            </section>
+            <FichaSection title="Precauciones">
+              <p class="flex max-w-[60ch] items-start gap-3"><Icon name="warning" class="mt-0.5 size-5 text-rose-deep" />{product.warnings}</p>
+            </FichaSection>
+          )}
+          {product.faqs.length > 0 && (
+            <FichaSection title="Preguntas frecuentes">
+              <dl class="grid gap-5">
+                {product.faqs.map((faq) => (
+                  <div>
+                    <dt class="font-medium text-ink">{faq.question}</dt>
+                    <dd class="mt-1 max-w-[60ch]">{faq.answer}</dd>
+                  </div>
+                ))}
+              </dl>
+            </FichaSection>
           )}
         </div>
 
-        {routine && currentStep ? (
+        {routine && position ? (
           <section class="mt-20" aria-labelledby="rutina">
-            <h2 id="rutina" class="text-3xl font-medium tracking-tighter">Dónde va en tu rutina</h2>
-            <p class="mt-3 max-w-[52ch] text-muted">
-              Es el paso {currentStep.step} de la rutina {routine.line.name}: {currentStep.label.toLowerCase()}.
-            </p>
+            <h2 id="rutina" class="text-3xl font-medium tracking-tighter">Productos complementarios de esta rutina</h2>
+            <p class="mt-3 max-w-[52ch] text-muted">Los demás pasos de la rutina {routine.line.name}, para armarla completa.</p>
             <div class="mt-8">
               <RoutineRail routine={routine} currentProductId={product.id} />
             </div>

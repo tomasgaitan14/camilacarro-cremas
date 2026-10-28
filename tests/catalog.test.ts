@@ -219,6 +219,20 @@ describe('getProductBySlug', () => {
   });
 });
 
+describe('preguntas frecuentes del seed', () => {
+  it('algunos productos de demo traen preguntas frecuentes bien formadas', async () => {
+    const products = await listProducts(anonClient(), { brandSlug: 'skin1004' });
+    const withFaqs = products.filter((p) => p.faqs.length > 0);
+    expect(withFaqs.length).toBeGreaterThan(0);
+    for (const product of withFaqs) {
+      for (const faq of product.faqs) {
+        expect(faq.question.endsWith('?'), `${product.slug}: ${faq.question}`).toBe(true);
+        expect(faq.answer.length, product.slug).toBeGreaterThan(10);
+      }
+    }
+  });
+});
+
 describe('marcas, categorías y datos del seed', () => {
   it('lista las marcas y categorías ordenadas por nombre', async () => {
     const brands = await listBrands(anonClient());

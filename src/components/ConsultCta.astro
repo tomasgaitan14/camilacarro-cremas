@@ -1,23 +1,17 @@
 ---
-import { buildConsultUrl } from '../lib/consult.ts';
-import Icon from './Icon.astro';
+import ConsultButton from './ConsultButton.astro';
 
 interface Props {
-  // producto sobre el que se consulta; sin él, la consulta es sobre la rutina en general
-  topic?: string;
   title?: string;
   text?: string;
   label?: string;
 }
 
 const {
-  topic,
   title = 'Te ayudamos a elegir',
   text = 'Elegir productos para tu piel no tiene por qué ser complicado. Si tenés dudas sobre cómo usar un producto o cómo incorporarlo a tu rutina, podemos ayudarte a encontrar la información que necesitás.',
   label = 'Consultar por WhatsApp',
 } = Astro.props;
-
-const href = buildConsultUrl(import.meta.env.PUBLIC_WHATSAPP_NUMBER, topic);
 ---
 
 <section class="reveal rounded-[2.5rem] bg-blush/80 p-8 sm:p-12 lg:p-14" aria-labelledby="consulta">
@@ -27,16 +21,9 @@ const href = buildConsultUrl(import.meta.env.PUBLIC_WHATSAPP_NUMBER, topic);
       <p class="mt-4 max-w-[56ch] text-muted">{text}</p>
     </div>
     <div class="lg:justify-self-end">
-      {
-        href ? (
-          <a href={href} target="_blank" rel="noopener" class="btn btn-solid gap-2.5">
-            <Icon name="whatsapp" class="size-5" />
-            {label}
-          </a>
-        ) : (
-          <p class="text-sm text-muted">La consulta por WhatsApp estará disponible muy pronto.</p>
-        )
-      }
+      <ConsultButton label={label}>
+        <p slot="fallback" class="text-sm text-muted">La consulta por WhatsApp estará disponible muy pronto.</p>
+      </ConsultButton>
     </div>
   </div>
 </section>

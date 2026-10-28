@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRoutines, routineStepHint, routineStepLabel } from '../src/lib/routine.ts';
+import { buildRoutines, findRoutinePosition, routineStepHint, routineStepLabel } from '../src/lib/routine.ts';
 import { makeLine, makeProduct } from './support/factories.ts';
 
 const LINE_A = makeLine({ id: 'la', slug: 'linea-a', name: 'Línea A' });
@@ -77,5 +77,50 @@ describe('buildRoutines', () => {
       makeProduct({ id: '3', line: LINE_A, routineStep: 3 }),
     ]);
     expect(routine.steps.map((s) => s.step)).toEqual([1, 3]);
+  });
+});
+
+describe('findRoutinePosition', () => {
+  const [routine] = buildRoutines([
+    makeProduct({ id: 'limpia', name: 'Aceite', line: LINE_A, routineStep: 1 }),
+    makeProduct({ id: 'trata', name: 'Ampolla', line: LINE_A, routineStep: 2 }),
+    makeProduct({ id: 'trata-2', name: 'Crema', line: LINE_A, routineStep: 2 }),
+    makeProduct({ id: 'protege', name: 'Protector', line: LINE_A, routineStep: 3 }),
+  ]);
+
+  it('un producto del medio tiene paso anterior y siguiente', () => {
+    const position = findRoutinePosition(routine, 'trata');
+    expect(position?.step.step).toBe(2);
+    expect(position?.previous?.step).toBe(1);
+    expect(position?.next?.step).toBe(3);
+  });
+
+  it('el primer paso no tiene anterior', () => {
+    const position = findRoutinePosition(routine, 'limpia');
+    expect(position?.previous).toBeNull();
+    expect(position?.next?.step).toBe(2);
+  });
+
+  it('el último paso no tiene siguiente', () => {
+    const position = findRoutinePosition(routine, 'protege');
+    expect(position?.previous?.step).toBe(2);
+    expect(position?.next).toBeNull();
+  });
+
+  it('dos productos del mismo paso comparten posición', () => {
+    expect(findRoutinePosition(routine, 'trata-2')?.step.step).toBe(2);
+  });
+
+  it('un producto que no está en la rutina devuelve null', () => {
+    expect(findRoutinePosition(routine, 'otro')).toBeNull();
+  });
+
+  it('con pasos salteados, vecino es el siguiente que existe y no el número consecutivo', () => {
+    const [sparse] = buildRoutines([
+      makeProduct({ id: 'a', line: LINE_B, routineStep: 1 }),
+      makeProduct({ id: 'c', line: LINE_B, routineStep: 3 }),
+    ]);
+    expect(findRoutinePosition(sparse, 'a')?.next?.step).toBe(3);
+    expect(findRoutinePosition(sparse, 'c')?.previous?.step).toBe(1);
   });
 });

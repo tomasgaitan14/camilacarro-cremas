@@ -61,3 +61,18 @@ export function buildRoutines(products: Product[]): Routine[] {
     }))
     .sort((a, b) => a.line.name.localeCompare(b.line.name, 'es'));
 }
+
+export interface RoutinePosition {
+  step: RoutineStep;
+  // los pasos vecinos dentro de la misma rutina (null en los extremos)
+  previous: RoutineStep | null;
+  next: RoutineStep | null;
+}
+
+// Dónde queda un producto dentro de su rutina y qué viene antes y después. Se deriva de los datos
+// que ya existen (línea y paso del producto): Camila no tiene que cargar nada más.
+export function findRoutinePosition(routine: Routine, productId: string): RoutinePosition | null {
+  const index = routine.steps.findIndex((step) => step.products.some((product) => product.id === productId));
+  if (index === -1) return null;
+  return { step: routine.steps[index], previous: routine.steps[index - 1] ?? null, next: routine.steps[index + 1] ?? null };
+}

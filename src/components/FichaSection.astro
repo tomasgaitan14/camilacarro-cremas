@@ -1,0 +1,20 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+  title: string;
+  open?: boolean;
+}
+
+const { title, open = false } = Astro.props;
+---
+
+<details class="group px-6 sm:px-8" open={open}>
+  <summary class="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 text-lg font-medium [&::-webkit-details-marker]:hidden">
+    {title}
+    <Icon name="caret-down" class="size-5 shrink-0 text-rose transition-transform duration-300 group-open:rotate-180" />
+  </summary>
+  <div class="pb-6 text-muted">
+    <slot />
+  </div>
+</details>

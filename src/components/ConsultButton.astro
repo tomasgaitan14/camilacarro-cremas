@@ -1,0 +1,27 @@
+---
+import { buildConsultUrl } from '../lib/consult.ts';
+import Icon from './Icon.astro';
+
+interface Props {
+  // producto sobre el que se consulta; sin él, la consulta es sobre la rutina en general
+  topic?: string;
+  label?: string;
+  variant?: 'solid' | 'ghost';
+  class?: string;
+}
+
+const { topic, label = 'Consultar por WhatsApp', variant = 'solid', class: className } = Astro.props;
+const href = buildConsultUrl(import.meta.env.PUBLIC_WHATSAPP_NUMBER, topic);
+---
+
+{
+  href ? (
+    <a href={href} target="_blank" rel="noopener" class:list={['btn gap-2.5', variant === 'solid' ? 'btn-solid' : 'btn-ghost', className]}>
+      <Icon name="whatsapp" class="size-5" />
+      {label}
+    </a>
+  ) : (
+    // sin número configurado no se muestra un botón que no funciona; quien use el componente puede dar una alternativa
+    <slot name="fallback" />
+  )
+}
