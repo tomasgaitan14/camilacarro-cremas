@@ -24,7 +24,7 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 - Tienda pública terminada en local (rama `design/design-taste`): portada de 7 secciones, catálogo con filtros y búsqueda, ficha educativa, `/rutinas`, carrito + pedido por WhatsApp, 404/500 con diseño. Probada en móvil (320 a 768 px) y con auditoría de contraste, títulos, nombres de enlaces y teclado. Tests con pruebas de mutación.
 - Accesibilidad: contraste AA en textos y controles, foco visible, diálogo del pedido con fondo inerte y foco devuelto, región en vivo para avisos, `prefers-reduced-motion` respetado.
 - Base: esquema + RLS + storage, seed de demo, capa de datos (`src/lib/`), `cart-store.ts`, `cart-controller.ts` (DOM por atributos `data-*`, contrato en `docs/cart-dom-contract.md`), `/api/cart-catalog.json`, `routine.ts`, `filters.ts`.
-- Panel `/admin` hecho en local (rama `feat/admin-panel`): login solo con Google, inicio con tres acciones, asistente de producto en 5 pasos (cada paso queda guardado como borrador), lista de precio y unidades con − / +, ocultar o mostrar, eliminar (archiva) y recuperar. Tests de integración y de HTTP sobre el sitio compilado, con pruebas de mutación.
+- Panel `/admin` hecho en local (rama `feat/admin-panel`): login solo con Google, inicio con tres acciones, asistente de producto en 5 pasos (cada paso queda guardado como borrador), lista de precio y unidades (los botones − / + solo cambian el número en pantalla, sin recargar; recién «Guardar» guarda precio y unidades juntos), ocultar o mostrar, eliminar (archiva) y recuperar. Tests de integración y de HTTP sobre el sitio compilado, con pruebas de mutación.
 - Sin hacer todavía: publicación (hosting, Supabase en la nube, dominio).
 
 ## Decisiones tomadas
