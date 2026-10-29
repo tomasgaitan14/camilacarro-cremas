@@ -6,6 +6,10 @@ interface ImportMetaEnv {
   readonly PUBLIC_WHATSAPP_NUMBER: string;
   // solo servidor; en milisegundos. 0 desactiva la caché del catálogo
   readonly CATALOG_CACHE_TTL_MS?: string;
+  // solo servidor; «true» enciende el panel /admin (apagado por defecto)
+  readonly ADMIN_ENABLED?: string;
+  // solo servidor; «true» pide a los buscadores que no indexen el sitio (demo)
+  readonly SITE_NOINDEX?: string;
 }
 
 interface ImportMeta {
