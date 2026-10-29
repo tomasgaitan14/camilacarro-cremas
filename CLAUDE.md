@@ -11,9 +11,9 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 ## Stack usado en este proyecto
 
 - Astro 7 (SSR con `@astrojs/node`) + Tailwind 4. Node 24 (`nvm use`).
-- Supabase **local** (CLI + Docker) para desarrollo. Todavía no hay proyecto en la nube.
-- Vitest: unitarios + integración contra el Supabase local.
-- Hosting: sin definir (por ahora todo corre en local).
+- Supabase **local** (CLI + Docker) para desarrollo y los tests. En la nube hay un proyecto de **demo** (ver «Demo en línea»).
+- Vitest 5 con dos proyectos: `unit` (unitarios + integración contra el Supabase local) y `http` (compilan el sitio una sola vez en un `globalSetup` y lo levantan en modo producción).
+- Hosting del demo: Vercel (adaptador `@astrojs/vercel`, que `astro.config.ts` usa solo cuando existe `VERCEL`; en local y en los tests, `@astrojs/node`). El hosting definitivo sigue sin definir.
 
 ## Proyectos relacionados
 
@@ -47,6 +47,16 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 - Estilo: clínico y profesional, paleta del logo (rosa empolvado ~`#DB9C9C` + blanco).
 - Productos de demo: salen de la presentación de SKIN1004 (`referencias/`: textos y fotos de la marca, solo para mostrar el sitio a Camila en local). Precios y stock son inventados. **No publicar ni commitear esas fotos** (`supabase/seed-assets/skin1004/` está en `.gitignore`). Antes de publicar: reemplazar por los productos y fotos de Camila y revisar los claims de cada marca (ANMAT).
 
+## Demo en línea (28/10/2026)
+
+- URL: **https://camilacarro-cremas.vercel.app**. Solo la tienda, para que Camila la vea: `/admin` apagado (404) y todo lleva `noindex`. Sin dominio propio todavía. Los IDs de cuentas, proyectos y comandos de deploy están en `~/projects-claude/personal/camilacarro-cremas-privado/` (fuera de git: el repo es público).
+- Datos: un proyecto Supabase en la nube (São Paulo, plan free) con las migraciones y el `seed.sql`. Las 8 fotos de demo (SKIN1004, de terceros) están subidas al bucket: **retirarlas antes de publicar de verdad**. No hay usuarios: el admin temporal que se usó para subir las fotos se borró.
+- Variables en Vercel (solo Production): `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY` (clave pública), `PUBLIC_WHATSAPP_NUMBER`, `SITE_NOINDEX=true`, `ALLOWED_HOSTS`. Nunca cargar la `service_role` en Vercel. Las `PUBLIC_*` se fijan al compilar: cambiarlas exige un deploy nuevo.
+- Interruptores de servidor (`src/lib/site-flags.ts`, leídos en cada pedido): `ADMIN_ENABLED=true` enciende `/admin` (apagado por defecto; en local y en los tests va en true) y `SITE_NOINDEX=true` agrega `x-robots-tag: noindex, nofollow`. En producción se leen solo de `process.env`, nunca de `import.meta.env` (Astro lo fija al compilar y un `.env` presente en ese momento dejaría el panel encendido).
+- Deploy: cada push a `main` deploya solo (Vercel conectado al repo). `.vercelignore` deja afuera `.env*`, `supabase/` (incluye las fotos de terceros), `scripts/`, `tests/` y `docs/` en los deploys por CLI; con el deploy desde git alcanza con el `.gitignore`.
+- La función corre en São Paulo (`gru1`, ver `vercel.json`), cerca de la base.
+- El catálogo se refresca solo en 60 s.
+
 ## Rendimiento y caché
 
 - El servidor guarda el catálogo (productos publicados, marcas y categorías) en memoria 60 s (`src/lib/catalog-cache.ts`, `ttl-cache.ts`): una sola carga para todo el sitio, renovación en segundo plano y, si Supabase falla, sigue sirviendo lo último que cargó. Búsquedas y filtros se resuelven en memoria (`catalog-filter.ts`), sin consultar la base.
@@ -57,7 +67,7 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 
 ## Próximos pasos
 
-1. Cuando se decida publicar: proyecto Supabase en la nube (**verificar el límite de 2 por cuenta**), hosting, `ALLOWED_HOSTS`, cliente OAuth de Google para producción (el actual es el local), pasar la app de Google a «Producción», apagar el login con contraseña, número real de WhatsApp, dominio, SEO/analítica.
+1. Ya hay un demo en Vercel. Cuando se decida publicar de verdad: proyecto Supabase en la nube (**verificar el límite de 2 por cuenta**), hosting, `ALLOWED_HOSTS`, cliente OAuth de Google para producción (el actual es el local), pasar la app de Google a «Producción», apagar el login con contraseña, número real de WhatsApp, dominio, SEO/analítica.
 2. Cargar los productos reales de Camila (fotos, textos, revisión de claims ANMAT) y reemplazar los de demo.
 
 ## Archivos clave
@@ -75,5 +85,5 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 - Imágenes de demo: placeholders generados con ImageMagick; las reales las sube Camila.
 - n8n: este proyecto no tiene flujos.
 - Google login local: credenciales en `supabase/.env` (ignorado por git; ver `supabase/.env.example`), URI de redirección `http://127.0.0.1:54321/auth/v1/callback`. La app de Google está en «Prueba»: solo entran los usuarios de prueba cargados en Google Cloud.
-- Los tests HTTP compilan con `astro build`: Vitest deja `PROD=''` en `process.env` y la compilación lo hereda (cookies sin `Secure`); `tests/support/site.ts` limpia esas variables.
+- Los tests HTTP compilan una sola vez en el `globalSetup` (`tests/support/global-build.ts`): Vitest deja `PROD=''` en `process.env` y la compilación lo hereda (cookies sin `Secure`), así que se limpian esas variables. Varios archivos compilando a la vez pisan `dist/` y los tests se vuelven inestables.
 - Supabase local usa los puertos 54321–54324; si se corre otro proyecto Supabase a la vez, cambiar los puertos en `supabase/config.toml`.
