@@ -155,26 +155,3 @@ export const archiveProduct = (client: SupabaseClient, productId: string): Promi
 
 export const restoreProduct = (client: SupabaseClient, productId: string): Promise<void> =>
   setStatus(client, productId, PRODUCT_STATUS.DRAFT);
-
-// Botones − / +: se lee el valor actual y se guarda dentro de 0..máximo
-export async function adjustStock(client: SupabaseClient, productId: string, delta: number): Promise<number> {
-  const current = await client.from('products').select('stock').eq('id', productId).single();
-  if (current.error) fail('No se pudo leer el producto', current.error);
-  const next = Math.min(PRODUCT_LIMITS.STOCK_MAX, Math.max(0, (current.data.stock as number) + delta));
-  const { error } = await client.from('products').update({ stock: next }).eq('id', productId);
-  if (error) fail('No se pudieron guardar las unidades', error);
-  invalidateCatalog();
-  return next;
-}
-
-export async function updateQuickPrice(client: SupabaseClient, productId: string, priceArs: number): Promise<void> {
-  const { error } = await client.from('products').update({ price_ars: priceArs }).eq('id', productId);
-  if (error) fail('No se pudo guardar el precio', error);
-  invalidateCatalog();
-}
-
-export async function updateQuickStock(client: SupabaseClient, productId: string, stock: number): Promise<void> {
-  const { error } = await client.from('products').update({ stock }).eq('id', productId);
-  if (error) fail('No se pudieron guardar las unidades', error);
-  invalidateCatalog();
-}

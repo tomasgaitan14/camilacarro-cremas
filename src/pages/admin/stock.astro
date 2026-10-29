@@ -4,20 +4,23 @@ import ProductRow from '../../components/admin/ProductRow.astro';
 import Icon from '../../components/Icon.astro';
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { ADMIN_PATHS } from '../../lib/admin-auth.ts';
-import { withNotice } from '../../lib/admin-notices.ts';
+import { ADMIN_NOTICE_PARAM, withNotice } from '../../lib/admin-notices.ts';
 import { describeAdminFailure } from '../../lib/admin-page.ts';
 import { parsePriceStockForm, text } from '../../lib/admin-product-input.ts';
-import { adjustStock, updatePriceStock } from '../../lib/admin-products.ts';
+import { updatePriceStock } from '../../lib/admin-products.ts';
 import { ADMIN_ROUTES } from '../../lib/admin-wizard.ts';
 import { filterProducts } from '../../lib/catalog-filter.ts';
 import { listProductsForAdmin } from '../../lib/catalog.ts';
-import { MAX_FILTER_TEXT_LENGTH, PRODUCT_STATUS, STOCK_STEP } from '../../lib/constants.ts';
+import { MAX_FILTER_TEXT_LENGTH, PRODUCT_STATUS } from '../../lib/constants.ts';
 
-const STOCK_INTENT = { SAVE: 'save', LESS: 'less', MORE: 'more' } as const;
+// Qué fila se acaba de guardar: vuelve en la dirección para mostrar el «Guardado» al lado de su botón
+const SAVED_ROW_PARAM = 'fila';
+const SAVE_INTENT = 'save';
 
 const supabase = Astro.locals.supabase;
 const search = (Astro.url.searchParams.get('q') ?? '').slice(0, MAX_FILTER_TEXT_LENGTH);
 const here = `${ADMIN_ROUTES.STOCK}${search ? `?q=${encodeURIComponent(search)}` : ''}`;
+const savedRowId = Astro.url.searchParams.get(ADMIN_NOTICE_PARAM) === 'cambios-guardados' ? Astro.url.searchParams.get(SAVED_ROW_PARAM) : null;
 
 // errores y valores por producto: solo la fila que falló los muestra
 let rowErrors: Record<string, Record<string, string>> = {};
@@ -27,26 +30,22 @@ let pageError = '';
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const productId = text(form, 'productId');
-  const intent = text(form, 'intent');
-  try {
-    if (intent === STOCK_INTENT.LESS || intent === STOCK_INTENT.MORE) {
-      await adjustStock(supabase, productId, intent === STOCK_INTENT.MORE ? STOCK_STEP : -STOCK_STEP);
-      return Astro.redirect(withNotice(here, 'unidades', `p-${productId}`), 303);
-    }
-    if (intent === STOCK_INTENT.SAVE) {
+  if (text(form, 'intent') === SAVE_INTENT) {
+    try {
       const parsed = parsePriceStockForm(form);
       if (!parsed.ok) {
         rowErrors = { [productId]: parsed.errors };
         rowValues = { [productId]: parsed.values };
       } else {
         await updatePriceStock(supabase, productId, parsed.value);
-        return Astro.redirect(withNotice(here, 'precio', `p-${productId}`), 303);
+        const target = `${here}${here.includes('?') ? '&' : '?'}${SAVED_ROW_PARAM}=${encodeURIComponent(productId)}`;
+        return Astro.redirect(withNotice(target, 'cambios-guardados', `p-${productId}`), 303);
       }
+    } catch (error) {
+      const message = describeAdminFailure(error);
+      if (!message) throw error;
+      pageError = message;
     }
-  } catch (error) {
-    const message = describeAdminFailure(error);
-    if (!message) throw error;
-    pageError = message;
   }
 }
 
@@ -78,25 +77,27 @@ const products = filterProducts(all, { search }).filter((product) => product.sta
       <ul class="tile mt-8 px-6 py-2 sm:px-8">
         {products.map((product) => {
           const errors = rowErrors[product.id] ?? {};
-          const values = rowValues[product.id] ?? { price: product.priceArs > 0 ? String(product.priceArs) : '', stock: String(product.stock) };
+          const savedPrice = product.priceArs > 0 ? String(product.priceArs) : '';
+          const values = rowValues[product.id] ?? { price: savedPrice, stock: String(product.stock) };
           return (
             <ProductRow product={product}>
               <div class="grid gap-3">
-                <form id={`less-${product.id}`} method="post" action={here}>
+                <form
+                  method="post"
+                  action={here}
+                  class="grid gap-3 sm:grid-cols-[auto_8rem_auto] sm:items-end"
+                  novalidate
+                  data-stock-row
+                  data-saved-stock={String(product.stock)}
+                  data-saved-price={savedPrice}
+                >
                   <input type="hidden" name="productId" value={product.id} />
-                  <input type="hidden" name="intent" value={STOCK_INTENT.LESS} />
-                </form>
-                <form id={`more-${product.id}`} method="post" action={here}>
-                  <input type="hidden" name="productId" value={product.id} />
-                  <input type="hidden" name="intent" value={STOCK_INTENT.MORE} />
-                </form>
-                <form method="post" action={here} class="grid gap-3 sm:grid-cols-[auto_8rem_auto] sm:items-end" novalidate>
-                  <input type="hidden" name="productId" value={product.id} />
-                  <input type="hidden" name="intent" value={STOCK_INTENT.SAVE} />
+                  <input type="hidden" name="intent" value={SAVE_INTENT} />
                   <div class="grid gap-1">
                     <label for={`stock-${product.id}`} class="text-xs text-muted">Unidades</label>
                     <div class="flex items-center gap-1">
-                      <button type="submit" form={`less-${product.id}`} class="btn btn-ghost size-11 !min-h-11 !p-0" aria-label={`Una unidad menos de ${product.name}`}>
+                      <!-- los botones solo cambian el número de al lado; sin JavaScript quedan ocultos y se escribe el número -->
+                      <button type="button" hidden data-stock-step="-1" class="btn btn-ghost size-11 !min-h-11 !p-0" aria-label={`Una unidad menos de ${product.name}`}>
                         <Icon name="minus" />
                       </button>
                       <input
@@ -105,11 +106,12 @@ const products = filterProducts(all, { search }).filter((product) => product.sta
                         type="text"
                         inputmode="numeric"
                         value={values.stock}
+                        data-stock-input
                         class="field w-16 px-2 text-center text-base"
                         aria-invalid={errors.stock ? 'true' : undefined}
                         aria-describedby={errors.stock ? `stock-${product.id}-error` : undefined}
                       />
-                      <button type="submit" form={`more-${product.id}`} class="btn btn-ghost size-11 !min-h-11 !p-0" aria-label={`Una unidad más de ${product.name}`}>
+                      <button type="button" hidden data-stock-step="1" class="btn btn-ghost size-11 !min-h-11 !p-0" aria-label={`Una unidad más de ${product.name}`}>
                         <Icon name="plus" />
                       </button>
                     </div>
@@ -122,15 +124,20 @@ const products = filterProducts(all, { search }).filter((product) => product.sta
                       type="text"
                       inputmode="numeric"
                       value={values.price}
+                      data-price-input
                       class="field w-full text-base"
                       aria-invalid={errors.price ? 'true' : undefined}
                       aria-describedby={errors.price ? `price-${product.id}-error` : undefined}
                     />
                   </div>
-                  <button type="submit" class="btn btn-solid btn-sm">Guardar</button>
+                  <button type="submit" data-save class="btn btn-solid btn-sm">Guardar</button>
+                  <p role="status" hidden data-unsaved-hint class="text-sm text-muted sm:col-span-3">Tenés cambios sin guardar. Tocá «Guardar» para aplicarlos.</p>
                 </form>
                 {errors.stock && <p id={`stock-${product.id}-error`} class="text-sm font-medium text-rose-deep">{errors.stock}</p>}
                 {errors.price && <p id={`price-${product.id}-error`} class="text-sm font-medium text-rose-deep">{errors.price}</p>}
+                {savedRowId === product.id && (
+                  <p role="status" class="inline-flex items-center gap-2 text-sm font-medium text-rose-deep"><Icon name="check" class="size-4" /> Guardado</p>
+                )}
               </div>
             </ProductRow>
           );
@@ -139,3 +146,9 @@ const products = filterProducts(all, { search }).filter((product) => product.sta
     )
   }
 </AdminLayout>
+
+<script>
+  import { initStockRows } from '../../lib/stock-rows.ts';
+
+  initStockRows(document);
+</script>

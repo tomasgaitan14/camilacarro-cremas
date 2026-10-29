@@ -2,7 +2,6 @@ import sharp from 'sharp';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  adjustStock,
   archiveProduct,
   createDraftProduct,
   hideProduct,
@@ -12,8 +11,6 @@ import {
   updateBasics,
   updateDetails,
   updatePriceStock,
-  updateQuickPrice,
-  updateQuickStock,
 } from '../src/lib/admin-products.ts';
 import { addExtraImage, removeImage, setMainImage } from '../src/lib/admin-product-images.ts';
 import type { DetailsInput } from '../src/lib/admin-product-input.ts';
@@ -233,54 +230,34 @@ describe('updateBasics', () => {
   });
 });
 
-describe('updatePriceStock y edición rápida', () => {
+describe('updatePriceStock', () => {
   it('guarda precio y unidades', async () => {
     const { id } = await newDraft(unique('Con precio'));
     await updatePriceStock(admin, id, { priceArs: 12500, stock: 8 });
     expect(await getProductForAdmin(admin, id)).toMatchObject({ priceArs: 12500, stock: 8 });
   });
 
-  it('la edición rápida cambia un solo dato y deja el otro', async () => {
-    const { id } = await newDraft(unique('Rápida'));
-    await updatePriceStock(admin, id, { priceArs: 1000, stock: 4 });
-    await updateQuickPrice(admin, id, 1500);
-    expect(await getProductForAdmin(admin, id)).toMatchObject({ priceArs: 1500, stock: 4 });
-    await updateQuickStock(admin, id, 9);
-    expect(await getProductForAdmin(admin, id)).toMatchObject({ priceArs: 1500, stock: 9 });
+  it('puede volver las unidades a 0 (agotado) sin tocar el precio', async () => {
+    const { id } = await newDraft(unique('Agotado'));
+    await updatePriceStock(admin, id, { priceArs: 900, stock: 5 });
+    await updatePriceStock(admin, id, { priceArs: 900, stock: 0 });
+    expect(await getProductForAdmin(admin, id)).toMatchObject({ priceArs: 900, stock: 0 });
   });
 
   it('un valor que la base rechaza (negativo) falla con error claro y no cambia nada', async () => {
     const { id } = await newDraft(unique('Negativo'));
     await updatePriceStock(admin, id, { priceArs: 1000, stock: 4 });
-    await expect(updateQuickStock(admin, id, -1)).rejects.toBeInstanceOf(AdminDataError);
-    await expect(updateQuickPrice(admin, id, -5)).rejects.toBeInstanceOf(AdminDataError);
+    await expect(updatePriceStock(admin, id, { priceArs: 1000, stock: -1 })).rejects.toBeInstanceOf(AdminDataError);
+    await expect(updatePriceStock(admin, id, { priceArs: -5, stock: 4 })).rejects.toBeInstanceOf(AdminDataError);
     expect(await getProductForAdmin(admin, id)).toMatchObject({ priceArs: 1000, stock: 4 });
   });
 
-  it('otro usuario no puede cambiar precios', async () => {
+  it('otro usuario no puede cambiar precios ni unidades', async () => {
     const { id } = await newDraft(unique('Protegido'));
     await updatePriceStock(admin, id, { priceArs: 1000, stock: 4 });
     // sin permiso la RLS filtra la fila: la actualización no toca nada
-    await updateQuickPrice(regular.client, id, 1).catch(() => undefined);
-    expect((await getProductForAdmin(admin, id))?.priceArs).toBe(1000);
-  });
-});
-
-describe('adjustStock', () => {
-  it('suma y resta', async () => {
-    const { id } = await newDraft(unique('Ajuste'));
-    await updatePriceStock(admin, id, { priceArs: 100, stock: 5 });
-    expect(await adjustStock(admin, id, 1)).toBe(6);
-    expect(await adjustStock(admin, id, -1)).toBe(5);
-    expect((await getProductForAdmin(admin, id))?.stock).toBe(5);
-  });
-
-  it('nunca baja de 0 ni pasa el máximo', async () => {
-    const { id } = await newDraft(unique('Límites de stock'));
-    await updatePriceStock(admin, id, { priceArs: 100, stock: 0 });
-    expect(await adjustStock(admin, id, -1)).toBe(0);
-    await updateQuickStock(admin, id, PRODUCT_LIMITS.STOCK_MAX);
-    expect(await adjustStock(admin, id, 1)).toBe(PRODUCT_LIMITS.STOCK_MAX);
+    await updatePriceStock(regular.client, id, { priceArs: 1, stock: 1 }).catch(() => undefined);
+    expect(await getProductForAdmin(admin, id)).toMatchObject({ priceArs: 1000, stock: 4 });
   });
 });
 
@@ -420,12 +397,8 @@ describe('la tienda se entera de los cambios al instante (caché del catálogo)'
     expect(await inCatalog()).toBeUndefined();
     await publishProduct(admin, draft.id);
     expect(await inCatalog()).toMatchObject({ priceArs: 700, stock: 3 });
-    await updateQuickPrice(admin, draft.id, 900);
-    expect((await inCatalog())?.priceArs).toBe(900);
-    await updateQuickStock(admin, draft.id, 1);
-    expect((await inCatalog())?.stock).toBe(1);
-    await adjustStock(admin, draft.id, 4);
-    expect((await inCatalog())?.stock).toBe(5);
+    await updatePriceStock(admin, draft.id, { priceArs: 900, stock: 1 });
+    expect(await inCatalog()).toMatchObject({ priceArs: 900, stock: 1 });
     await updateDetails(admin, draft.id, fixture.brandId, { ...EMPTY_DETAILS, summary: 'Resumen nuevo' });
     expect((await inCatalog())?.summary).toBe('Resumen nuevo');
     await updateBasics(admin, draft.id, {

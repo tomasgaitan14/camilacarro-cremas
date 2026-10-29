@@ -342,29 +342,65 @@ describe('precio y unidades', () => {
   const stockValue = async (id: string) => (await serviceClient().from('products').select('stock').eq('id', id).single()).data?.stock;
   const priceValue = async (id: string) => (await serviceClient().from('products').select('price_ars').eq('id', id).single()).data?.price_ars;
 
-  it('los botones − y + suman y restan de a uno, y vuelven a la misma fila', async () => {
+  it('el − y el + no mandan nada al servidor: son botones comunes, sin formularios propios', async () => {
     const id = await readyProduct(`Botones ${fixture.tag}`);
-    const more = await post('/admin/stock', { productId: id, intent: 'more' });
-    expect(location(more)).toBe(`/admin/stock?aviso=unidades#p-${id}`);
-    expect(await stockValue(id)).toBe(5);
-    await post('/admin/stock', { productId: id, intent: 'less' });
-    await post('/admin/stock', { productId: id, intent: 'less' });
-    expect(await stockValue(id)).toBe(3);
+    const html = await (await get(`/admin/stock?q=${encodeURIComponent(`Botones ${fixture.tag}`)}`)).text();
+    // un solo formulario por producto (el que guarda precio y unidades)
+    expect(html.match(/<form[^>]*data-stock-row/g)).toHaveLength(1);
+    expect(html).not.toMatch(/id="(less|more)-/);
+    for (const step of ['-1', '1']) {
+      const button = html.match(new RegExp(`<button[^>]*data-stock-step="${step}"[^>]*>`));
+      expect(button?.[0], step).toContain('type="button"');
+      expect(button?.[0], step).toContain('hidden');
+    }
+    // lo guardado viaja en la página para saber si hay cambios sin guardar
+    expect(html).toContain('data-saved-stock="4"');
+    expect(html).toContain('data-saved-price="12500"');
+    expect(await stockValue(id)).toBe(4);
   });
 
-  it('no baja de cero', async () => {
+  it('los pedidos viejos de «una unidad más/menos» ya no hacen nada', async () => {
+    const id = await readyProduct(`Viejo botón ${fixture.tag}`);
+    for (const intent of ['more', 'less']) {
+      const response = await post('/admin/stock', { productId: id, intent });
+      expect(response.status, intent).toBe(200);
+    }
+    expect(await stockValue(id)).toBe(4);
+  });
+
+  it('pasar las unidades a 0 guarda el producto como agotado', async () => {
     const id = await readyProduct(`Cero ${fixture.tag}`);
-    await post('/admin/stock', { productId: id, intent: 'save', price: '100', stock: '0' });
-    await post('/admin/stock', { productId: id, intent: 'less' });
+    await post('/admin/stock', { productId: id, intent: 'save', price: '12500', stock: '0' });
     expect(await stockValue(id)).toBe(0);
   });
 
   it('guarda el precio y las unidades a la vez', async () => {
     const id = await readyProduct(`Guardar ambos ${fixture.tag}`);
     const response = await post('/admin/stock', { productId: id, intent: 'save', price: '$ 15.900', stock: '12' });
-    expect(location(response)).toBe(`/admin/stock?aviso=precio#p-${id}`);
+    expect(location(response)).toBe(`/admin/stock?fila=${id}&aviso=cambios-guardados#p-${id}`);
     expect(await priceValue(id)).toBe(15900);
     expect(await stockValue(id)).toBe(12);
+  });
+
+  it('después de guardar, esa fila muestra «Guardado» (no hay que subir a buscar el aviso)', async () => {
+    const id = await readyProduct(`Confirmación ${fixture.tag}`);
+    const redirect = await post('/admin/stock', { productId: id, intent: 'save', price: '13000', stock: '6' });
+    const html = await (await get(location(redirect).replace(/#.*/, ''))).text();
+    expect(html).toContain('Guardado');
+    // y solo en esa fila: otra dirección con una fila distinta no lo muestra
+    const other = await (await get(`/admin/stock?fila=00000000-0000-4000-8000-000000000000&aviso=cambios-guardados`)).text();
+    expect(other).not.toContain('Guardado');
+  });
+
+  it('con una búsqueda activa, guardar vuelve a la misma búsqueda y a la misma fila', async () => {
+    const id = await readyProduct(`Con búsqueda ${fixture.tag}`);
+    const response = await fetch(`${site.origin}/admin/stock?q=${encodeURIComponent('con búsqueda')}`, {
+      method: 'POST',
+      redirect: 'manual',
+      headers: { cookie, origin: site.origin, 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ productId: id, intent: 'save', price: '8000', stock: '2' }),
+    });
+    expect(location(response)).toBe(`/admin/stock?q=con%20b%C3%BAsqueda&fila=${id}&aviso=cambios-guardados#p-${id}`);
   });
 
   it('un valor inválido no guarda y muestra el error en esa fila', async () => {

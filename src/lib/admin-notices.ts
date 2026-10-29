@@ -10,8 +10,7 @@ export const ADMIN_NOTICES = {
   oculto: 'Ocultamos el producto. Ya no se ve en la tienda.',
   eliminado: 'Eliminamos el producto. Si te arrepentís, lo podés recuperar desde «Ocultar o mostrar».',
   recuperado: 'Recuperamos el producto como borrador.',
-  precio: 'Cambiamos el precio.',
-  unidades: 'Cambiamos las unidades.',
+  'cambios-guardados': 'Guardamos los cambios.',
 } as const;
 
 export type AdminNoticeCode = keyof typeof ADMIN_NOTICES;

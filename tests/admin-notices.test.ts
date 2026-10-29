@@ -16,12 +16,12 @@ describe('noticeFor', () => {
 
 describe('withNotice', () => {
   it('agrega el aviso a una dirección simple', () => {
-    expect(withNotice('/admin/stock', 'precio')).toBe('/admin/stock?aviso=precio');
+    expect(withNotice('/admin/stock', 'cambios-guardados')).toBe('/admin/stock?aviso=cambios-guardados');
   });
   it('respeta una consulta que ya existe', () => {
-    expect(withNotice('/admin/stock?q=crema', 'precio')).toBe('/admin/stock?q=crema&aviso=precio');
+    expect(withNotice('/admin/stock?q=crema', 'cambios-guardados')).toBe('/admin/stock?q=crema&aviso=cambios-guardados');
   });
   it('puede volver a la fila que se tocó', () => {
-    expect(withNotice('/admin/stock', 'unidades', 'p-123')).toBe('/admin/stock?aviso=unidades#p-123');
+    expect(withNotice('/admin/stock', 'cambios-guardados', 'p-123')).toBe('/admin/stock?aviso=cambios-guardados#p-123');
   });
 });
