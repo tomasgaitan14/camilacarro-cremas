@@ -242,20 +242,10 @@
     .float-slow {
       animation: float 7s ease-in-out infinite alternate;
     }
-    .marquee-track {
-      animation: marquee 48s linear infinite;
-    }
-    .marquee:hover .marquee-track {
-      animation-play-state: paused;
-    }
     .step-cycle {
       animation: step-cycle 9s ease-in-out infinite;
       animation-delay: calc(var(--i) * 9s / var(--n));
     }
-  }
-  .marquee-track {
-    display: flex;
-    width: max-content;
   }
   @keyframes shimmer {
     to {
@@ -288,11 +278,6 @@
     }
     to {
       transform: translateY(-10px);
-    }
-  }
-  @keyframes marquee {
-    to {
-      transform: translateX(-50%);
     }
   }
   /* resalta cada paso del modo de uso, uno por vez */
