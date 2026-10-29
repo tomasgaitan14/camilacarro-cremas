@@ -162,7 +162,6 @@ describe('createDraftProduct', () => {
   });
 
   it('una marca que no existe falla con un error claro y no deja un producto a medias', async () => {
-    const before = (await listProductsForAdmin(admin)).length;
     await expect(
       createDraftProduct(admin, {
         name: unique('Huérfano'),
@@ -170,7 +169,9 @@ describe('createDraftProduct', () => {
         category: { kind: 'existing', id: fixture.categoryId },
       }),
     ).rejects.toBeInstanceOf(AdminDataError);
-    expect((await listProductsForAdmin(admin)).length).toBe(before);
+    // se mira solo este producto: otros archivos de tests crean productos en paralelo
+    const { count } = await serviceClient().from('products').select('id', { count: 'exact', head: true }).eq('name', unique('Huérfano'));
+    expect(count).toBe(0);
   });
 
   it('sin la sesión de un admin la base lo rechaza y no se crea nada', async () => {

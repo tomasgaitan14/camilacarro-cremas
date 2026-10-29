@@ -1,12 +1,12 @@
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { once } from 'node:events';
 import net from 'node:net';
 import { resolve } from 'node:path';
+import { cleanEnv } from './global-build.ts';
 
 const ROOT = resolve(import.meta.dirname, '../..');
-// Vitest deja estas variables en process.env y Vite las usa para inlinar import.meta.env: heredadas, la compilación
-// sale en modo desarrollo (PROD vacío) y las cookies saldrían sin Secure aunque el código esté bien.
-const VITEST_ENV_KEYS = ['PROD', 'DEV', 'MODE', 'SSR', 'BASE_URL', 'NODE_ENV', 'VITEST', 'VITEST_MODE', 'VITEST_POOL_ID', 'VITEST_WORKER_ID', 'TEST'];
+const SERVER_ENTRY = resolve(ROOT, 'dist/server/entry.mjs');
 const READY_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 200;
 
@@ -35,22 +35,21 @@ async function waitUntilReady(origin: string, child: ChildProcess): Promise<void
   throw new Error('El servidor del sitio no respondió a tiempo');
 }
 
-// Compila el sitio y lo levanta en modo producción en un puerto libre, para probar el middleware y los endpoints reales
-function cleanEnv(): NodeJS.ProcessEnv {
-  const env = { ...process.env };
-  for (const key of VITEST_ENV_KEYS) delete env[key];
-  return env;
+function omitUndefined(env: Record<string, string | undefined>): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(env).filter((entry): entry is [string, string] => entry[1] !== undefined));
 }
 
-export async function startSite(): Promise<{ origin: string; stop: () => Promise<void> }> {
-  const build = spawnSync(process.execPath, ['node_modules/astro/bin/astro.mjs', 'build'], { cwd: ROOT, encoding: 'utf8', env: cleanEnv() });
-  if (build.status !== 0) throw new Error(`Falló la compilación del sitio:\n${build.stdout}\n${build.stderr}`);
-
+// Levanta en modo producción, en un puerto libre, el sitio que compiló el globalSetup (ver global-build.ts).
+// extraEnv: variables del servidor para esa corrida (undefined la quita). Por defecto el panel va encendido.
+export async function startSite(extraEnv: Record<string, string | undefined> = {}): Promise<{ origin: string; stop: () => Promise<void> }> {
+  if (!existsSync(SERVER_ENTRY)) {
+    throw new Error('Falta dist/server/entry.mjs: los tests HTTP se corren con vitest (proyecto "http"), que compila antes de empezar');
+  }
   const port = await freePort();
   const origin = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, ['dist/server/entry.mjs'], {
+  const child = spawn(process.execPath, [SERVER_ENTRY], {
     cwd: ROOT,
-    env: { ...cleanEnv(), HOST: '127.0.0.1', PORT: String(port) },
+    env: omitUndefined({ ...cleanEnv(), ADMIN_ENABLED: 'true', SITE_NOINDEX: undefined, ...extraEnv, HOST: '127.0.0.1', PORT: String(port) }),
     stdio: 'ignore',
   });
   await waitUntilReady(origin, child);
