@@ -73,7 +73,7 @@ Personal (cliente chico, sin restricciones de cliente). Ver `../CLAUDE.md`.
 ## Archivos clave
 
 - `supabase/migrations/20261027000000_catalog.sql`: tablas, RLS, bucket `product-images`.
-- `docs/design-system.md`: **sistema de diseño y receta para un cliente nuevo** (tokens, piezas, composición, movimiento, accesibilidad, voz, panel guiado y checklist para cambiar el branding). Si cambia el diseño, actualizarlo.
+- El sistema de diseño y la receta para reutilizar este estilo con otra marca viven **fuera del repo**, en la referencia global (`~/.claude/references/estilo-camila-carro-design-system.md`). Si cambia el diseño de este proyecto, actualizarla allí.
 - `supabase/seed.sql` y `supabase/seed-assets/`: demo. `scripts/seed.ts`: admin + imágenes (solo contra local).
 - `src/lib/catalog.ts` (lectura), `cart.ts` (carrito puro), `whatsapp.ts` (mensaje y URL), `constants.ts`.
 - Panel: `admin-auth.ts` (reglas de acceso, puras), `supabase-server.ts` (sesión por cookie), `src/middleware.ts`, `admin-product-input.ts` (validación de formularios), `admin-products.ts` / `admin-product-images.ts` / `admin-reference.ts` (escritura), `image-processing.ts` (sharp), `admin-wizard.ts` (pasos), `admin-notices.ts`, `admin-page.ts`. Páginas en `src/pages/admin/`, componentes de formulario en `src/components/admin/`, layouts `AdminLayout` y `WizardLayout`.
