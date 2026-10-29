@@ -24,3 +24,6 @@ supabase/seed-assets/skin1004/
 
 # worktrees de las versiones de diseño
 .worktrees/
+
+# vercel
+.vercel/

@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.astro/
+.claude/
+.worktrees/
+dist/
+node_modules/
+referencias/
+supabase/
+scripts/
+tests/
+docs/
